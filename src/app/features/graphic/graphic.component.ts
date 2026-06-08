@@ -32,11 +32,11 @@ import { LayerService } from '../../services/layer.service';
 export class GraphicComponent implements OnInit, OnDestroy {
   map: Map;
   view: MapView;
-  graphicLayer : GraphicsLayer;
+  graphicLayer: GraphicsLayer;
   sketch: Sketch;
-  @Input() mapSubject!: BehaviorSubject<Map | null>;  
+  @Input() mapSubject!: BehaviorSubject<Map | null>;
   @Input() viewSubject!: BehaviorSubject<MapView | null>;
-  subscriptions: Subscription[] = [];  
+  subscriptions: Subscription[] = [];
   private bkExpand_Sketch: Expand;
   private all_graphics: Graphic[] = [];
   private url_sp: string;
@@ -54,8 +54,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
   constructor(
     private messageService: MessageService,
     private layerService: LayerService
-  ) 
-  { 
+  ) {
     this.loadLayersToIntersect();
     // simbología para puntos
     // Definir el símbolo de agrandamiento
@@ -67,7 +66,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
         color: new Color(environment.puntos.color_ptos_outline),
         width: 2
       })
-    });  
+    });
     this.originalSymbol = new SimpleMarkerSymbol({
       style: "circle",
       color: new Color(environment.puntos.color_ptos_static),
@@ -78,11 +77,11 @@ export class GraphicComponent implements OnInit, OnDestroy {
       })
     });
     this.optionToSelectMultiplePoints = environment.multiplePointSelection;
-    
+
   }
 
-  private enableSketchAfterPointCreated(){
-    if(this.isPointFinished){
+  private enableSketchAfterPointCreated() {
+    if (this.isPointFinished) {
       this.isPointFinished = false;
       this.changeStateMultipleSelectionSketch(false);
       this.enablePointCreation(false);
@@ -96,22 +95,23 @@ export class GraphicComponent implements OnInit, OnDestroy {
     this.sketch.visibleElements.undoRedoMenu = false;
   }
 
-  private changeStateMultipleSelectionSketch(value: boolean): void{
+  private changeStateMultipleSelectionSketch(value: boolean): void {
     this.sketch.visibleElements = {
-      selectionTools: { 
-                      "rectangle-selection": value, // Deshabilitar Seleccionar por rectángulo
-                      "lasso-selection": value 
-                      }};   // Deshabilitar Seleccionar por lazo
+      selectionTools: {
+        "rectangle-selection": value, // Deshabilitar Seleccionar por rectángulo
+        "lasso-selection": value
+      }
+    };   // Deshabilitar Seleccionar por lazo
   }
 
 
   ngOnInit() {
     const s1 = this.mapSubject.subscribe(map => {
       if (map) {
-        this.map = map;        
+        this.map = map;
       }
     });
-    
+
     const s2 = this.viewSubject.subscribe(view => {
       if (view) {
         this.view = view;
@@ -125,55 +125,55 @@ export class GraphicComponent implements OnInit, OnDestroy {
 
     const s3 = this.messageService.mObservable$.subscribe(data => {
       //console.log(data, "data")
-      if (data.message === 'ADD_FEATURES'){
+      if (data.message === 'ADD_FEATURES') {
         this.addGraphics(data.params);
         //this.zoomToAllFeatures();
-      } else if (data.message === 'ZOOM_TO_FEATURE'){
-        this.zoomToFeature(data.params.id);  
-      } else if (data.message === 'DELETE_FEATURES'){
+      } else if (data.message === 'ZOOM_TO_FEATURE') {
+        this.zoomToFeature(data.params.id);
+      } else if (data.message === 'DELETE_FEATURES') {
         this.parentDeletingGraphics(data.params.ids);
-      } else if (data.message === 'FINISHED_POINT'){
-        if(this.graphicInProcess){
+      } else if (data.message === 'FINISHED_POINT') {
+        if (this.graphicInProcess) {
           this.all_graphics.push(this.graphicInProcess);
           this.graphicInProcess = null;
         }
         this.enableSketchAfterPointCreated();
         this.selectAndEditCreatedPoint(null, false);
-        this.sketchUpdate();  
-        if(!this.bkExpand_Sketch.visible) this.bkExpand_Sketch.visible = true;      
-      } else if (data.message === 'ONLY_VIEW'){ 
+        this.sketchUpdate();
+        if (!this.bkExpand_Sketch.visible) this.bkExpand_Sketch.visible = true;
+      } else if (data.message === 'ONLY_VIEW') {
         //Solo visualziación | no hay vuelta atrás
-        this.startViewMode();   
-      } else if (data.message === 'UPDATE_FEATURE'){ //Modificar un punto, sólo puede modificar el punto con el id pasado por parámetro
+        this.startViewMode();
+      } else if (data.message === 'UPDATE_FEATURE') { //Modificar un punto, sólo puede modificar el punto con el id pasado por parámetro
         console.log("PIDEN ACTUALIAR ESTE PUNTO: ", data.params.id); //TODO: Error, me deja crear puntos
         this.cancelCreatePointMode();
         this.enableSketchAfterPointCreated();
-        if(data.params && data.params.id){
+        if (data.params && data.params.id) {
           const graph = this.selectGraphicById(data.params.id);
-          if(graph) {
+          if (graph) {
             this.graphicInProcess = graph;
             this.graphicInProcess.symbol = this.largeSymbol;
             this.zoomToFeature(data.params.id);
           }
-          if(!this.bkExpand_Sketch.visible) this.bkExpand_Sketch.visible = true;  
+          if (!this.bkExpand_Sketch.visible) this.bkExpand_Sketch.visible = true;
         }
       }
     });
 
-    this.subscriptions.push(s1, s2, s3);  
+    this.subscriptions.push(s1, s2, s3);
   }
   private selectGraphicById(id: string): Graphic | null {
-    if(this.all_graphics.length > 0){
+    if (this.all_graphics.length > 0) {
       const graphic = this.all_graphics.find((g) => g.attributes && g.attributes.id === id);
       return graphic || null;
-    } 
+    }
     else return null;
   }
 
   private startViewMode(): void {
-    if (this.sketch){
+    if (this.sketch) {
       this.sketch.cancel();
-       //this.enablePointCreation(false);
+      //this.enablePointCreation(false);
       //this.sketch.visible = false;
       this.sketch.destroy();
       this.bkExpand_Sketch.visible = false;
@@ -192,7 +192,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
       this.view.goTo({
         target: graphic,
         scale: 1000
-      }, {duration : 2000});      
+      }, { duration: 2000 });
     }
   }
 
@@ -202,10 +202,10 @@ export class GraphicComponent implements OnInit, OnDestroy {
         this.all_graphics = this.graphicLayer.graphics.toArray();
         if (this.all_graphics.length > 0) {
           let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity;
-  
+
           this.all_graphics.forEach(graphic => {
             const geometry = graphic.geometry;
-  
+
             if (geometry) {
               if (geometry.type === "point") {
                 const point = geometry as Point;
@@ -221,31 +221,31 @@ export class GraphicComponent implements OnInit, OnDestroy {
               }
             }
           });
-  
+
           const centerX = (xmin + xmax) / 2;
           const centerY = (ymin + ymax) / 2;
           const extentWidth = xmax - xmin;
           const extentHeight = ymax - ymin;
-  
+
           const viewWidthInMapUnits = this.view.width * this.view.resolution;
           const viewHeightInMapUnits = this.view.height * this.view.resolution;
-  
+
           const scaleX = extentWidth / viewWidthInMapUnits;
           const scaleY = extentHeight / viewHeightInMapUnits;
-  
+
           const scale = Math.max(scaleX, scaleY) * this.view.scale;
-  
+
           this.view.goTo({
             center: [centerX, centerY],
             scale: scale * 1.2
-          }, { duration: 1500});
+          }, { duration: 1500 });
         } else {
           console.warn('No hay gráficos en la capa para hacer zoom.');
         }
       });
     }
   }
-  
+
   setupHoverEffect() {
     let highlightedGraphic: Graphic | null = null;
 
@@ -255,12 +255,12 @@ export class GraphicComponent implements OnInit, OnDestroy {
           highlightedGraphic.symbol = this.originalSymbol;
           highlightedGraphic = null;
         }
-  
+
         if (response.results.length) {
           const graphic = response.results.find((result: any) => {
             return result.graphic && result.graphic.layer === this.graphicLayer;
           })?.graphic;
-  
+
           if (graphic) {
             graphic.symbol = this.largeSymbol;
             highlightedGraphic = graphic;
@@ -276,14 +276,14 @@ export class GraphicComponent implements OnInit, OnDestroy {
       }
     });
   }
-    
-  addGraphics(featureCollection: any){
-    console.log(featureCollection);    
+
+  addGraphics(featureCollection: any) {
+    console.log(featureCollection);
     if (featureCollection && featureCollection.features) {
-      featureCollection.features.forEach((f: any) => {        
-          if(f.properties.id != null && f.properties.id != ""){        
+      featureCollection.features.forEach((f: any) => {
+        if (f.properties.id != null && f.properties.id != "") {
           // Crear un gráfico a partir de cada feature
-          let graphic = createGraphicFromGeoJSON(f, this.originalSymbol);        
+          let graphic = createGraphicFromGeoJSON(f, this.originalSymbol);
           // Agregar el gráfico a la capa
           this.graphicLayer.add(graphic);
         }
@@ -291,7 +291,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
     }
   }
 
-  setupGraphicsLayer() {        
+  setupGraphicsLayer() {
     this.graphicLayer = this.layerService.getGraphicLayer();
     this.map.add(this.graphicLayer);
   }
@@ -325,7 +325,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
 
     this.view.ui.add(this.bkExpand_Sketch, 'top-right');
   }
-  
+
   setupLayerList() {
     const layerList = new LayerList({
       view: this.view
@@ -339,21 +339,21 @@ export class GraphicComponent implements OnInit, OnDestroy {
     this.view.ui.add(bkExpand, 'bottom-right');
   }
 
-  private enablePointCreation(value: boolean){
-    this.sketch.visibleElements.createTools = {point: value};
+  private enablePointCreation(value: boolean) {
+    this.sketch.visibleElements.createTools = { point: value };
   }
 
   private selectAndEditCreatedPoint(graphic: Graphic | null, finishSetting: boolean): void {
-    if(!finishSetting){
-      if(graphic != null){
-        this.graphicInProcess = graphic;      
+    if (!finishSetting) {
+      if (graphic != null) {
+        this.graphicInProcess = graphic;
       }
-    } else {      
+    } else {
       this.sketch.cancel();
     }
   }
-//Métodos de configuración del Sketch
-  private sketchCreate(){
+  //Métodos de configuración del Sketch
+  private sketchCreate() {
     this.sketch.on('create', async (event) => {
       if (event.state === 'complete') {
         const graphic = event.graphic;
@@ -362,7 +362,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
         const padron = await this.queryToIntersect(this.url_padrones, graphic, "PADRON");
         const depto = await this.queryToIntersect(this.url_deptos, graphic, "NOMBRE");
         const limiteNacional = await this.queryToIntersect(this.url_limiteNacional, graphic, "OBJECTID");
-        
+
         graphic.attributes = {
           padron: padron[0],
           departamento: depto[0],
@@ -373,115 +373,115 @@ export class GraphicComponent implements OnInit, OnDestroy {
 
         const geojson = graphicToGeoJSON(graphic);
         console.log(geojson);
-        if(geojson != null) {
+        if (geojson != null) {
           this.messageService.sendMessageToParent('ADD_FEATURE', { "geojson": geojson });
           this.zoomToFeature(graphic.attributes.id);
           this.enableSketchAfterPointCreated();
           this.selectAndEditCreatedPoint(graphic, false);
-          console.log( this.graphicInProcess);
+          console.log(this.graphicInProcess);
         } else {
-          console.log("Error en armado de GeoJson: Método UPDATE");                        
+          console.log("Error en armado de GeoJson: Método UPDATE");
         }
       }
       this.onlyCreate = false;
-      
-    });  
+
+    });
   }
 
-  private sketchUpdate(){
-      this.sketch.on("update", async (event) => {
-        if(this.onlyCreate) this.sketch.cancel();
-        else if(this.graphicInProcess == null){
-          // Map para almacenar los ids originales asociados a sus gráficos
-          if (event.state === 'start') {
-            if(event.graphics.length == 1){
-              const graphic = event.graphics[0];
-              if (graphic) {
-                const id = graphic.attributes?.id;
-                if (id) {
-                  console.log(`Punto seleccionado con id: ${id}`);
-                  this.messageService.sendMessageToParent('FEATURE_SELECTED', { id: id });
-                }
-              }
-              } else if(event.graphics.length > 1){
-                const idsSelected: string[] = [];
-                event.graphics.forEach(g => {
-                  if(g.attributes?.id) idsSelected.push(g.attributes.id);
-                });
-                if(idsSelected.length > 0) this.messageService.sendMessageToParent('FEATURES_SELECTED', { id: idsSelected });
-              }
-            }
-            const updatedGraphics: Graphic[] = [];
-            console.log(event.graphics.length);
-            if (event.toolEventInfo && event.toolEventInfo.type === "move-stop") {
-              // Crear un array de promesas para esperar a que todas las consultas se completen
-              const updatePromises = event.graphics.map(async (graphic) => {
-                console.log("El punto ha sido movido: ", graphic.geometry);
-                console.log(graphic);
-                const sp = await this.queryToIntersect(this.url_sp, graphic, "SECCION");
-                const padron = await this.queryToIntersect(this.url_padrones, graphic, "PADRON");
-                const depto = await this.queryToIntersect(this.url_deptos, graphic, "NOMBRE");
-                const limiteNacional = await this.queryToIntersect(this.url_limiteNacional, graphic, "OBJECTID");
-                // Restaurar los atributos y asignar el id original desde el Map
-                graphic.attributes.padron = padron[0];
-                graphic.attributes.departamento = depto[0];
-                graphic.attributes.seccional_policial = sp[0];
-                graphic.attributes.esTerritorioNacional = limiteNacional.length > 0;
-                // Agregar el gráfico actualizado al array
-                updatedGraphics.push(graphic);
-              });    
-              // Esperar a que todas las promesas se resuelvan
-              await Promise.all(updatePromises);    
-              // Convertir la colección de gráficos a GeoJSON y enviar el mensaje
-              const geojson = graphicCollectionToGeoJSON(updatedGraphics);
-              console.log(geojson);
-              if(geojson != null) this.messageService.sendMessageToParent('UPDATE_FEATURE', { "geojson": geojson });
-              else console.log("Error en armado de GeoJson: Método UPDATE")
-            }
-          
-        } else {
-          if (event.state === 'start' && event.graphics.length == 1) {
+  private sketchUpdate() {
+    this.sketch.on("update", async (event) => {
+      if (this.onlyCreate) this.sketch.cancel();
+      else if (this.graphicInProcess == null) {
+        // Map para almacenar los ids originales asociados a sus gráficos
+        if (event.state === 'start') {
+          if (event.graphics.length == 1) {
             const graphic = event.graphics[0];
             if (graphic) {
               const id = graphic.attributes?.id;
-              if (id && this.graphicInProcess.attributes.id === id) {
+              if (id) {
+                console.log(`Punto seleccionado con id: ${id}`);
                 this.messageService.sendMessageToParent('FEATURE_SELECTED', { id: id });
-              }else this.sketch.cancel();
+              }
             }
+          } else if (event.graphics.length > 1) {
+            const idsSelected: string[] = [];
+            event.graphics.forEach(g => {
+              if (g.attributes?.id) idsSelected.push(g.attributes.id);
+            });
+            if (idsSelected.length > 0) this.messageService.sendMessageToParent('FEATURES_SELECTED', { id: idsSelected });
           }
-          const updatedGraphics: Graphic[] = [];
-            if (event.toolEventInfo && event.toolEventInfo.type === "move-stop") {
-              // Crear un array de promesas para esperar a que todas las consultas se completen
-              const updatePromises = event.graphics.map(async (graphic) => {
-                console.log("El punto ha sido movido: ", graphic.geometry);
-                console.log(graphic);
-                const sp = await this.queryToIntersect(this.url_sp, graphic, "SECCION");
-                const padron = await this.queryToIntersect(this.url_padrones, graphic, "PADRON");
-                const depto = await this.queryToIntersect(this.url_deptos, graphic, "NOMBRE");
-                const limiteNacional = await this.queryToIntersect(this.url_limiteNacional, graphic, "OBJECTID");
-                // Restaurar los atributos y asignar el id original desde el Map
-                graphic.attributes.padron = padron[0];
-                graphic.attributes.departamento = depto[0];
-                graphic.attributes.seccional_policial = sp[0];
-                graphic.attributes.esTerritorioNacional = limiteNacional.length > 0;
-                // Agregar el gráfico actualizado al array
-                updatedGraphics.push(graphic);
-              });    
-              // Esperar a que todas las promesas se resuelvan
-              await Promise.all(updatePromises);    
-              // Convertir la colección de gráficos a GeoJSON y enviar el mensaje
-              const geojson = graphicCollectionToGeoJSON(updatedGraphics);
-              console.log(geojson);
-              if(geojson != null) this.messageService.sendMessageToParent('UPDATE_FEATURE', { "geojson": geojson });
-              else console.log("Error en armado de GeoJson: Método UPDATE")
-            }
         }
-      });    
-  
-    } 
-  
-  private sketchDelete(){    
-  // Manejo del evento 'delete'
+        const updatedGraphics: Graphic[] = [];
+        console.log(event.graphics.length);
+        if (event.toolEventInfo && event.toolEventInfo.type === "move-stop") {
+          // Crear un array de promesas para esperar a que todas las consultas se completen
+          const updatePromises = event.graphics.map(async (graphic) => {
+            console.log("El punto ha sido movido: ", graphic.geometry);
+            console.log(graphic);
+            const sp = await this.queryToIntersect(this.url_sp, graphic, "SECCION");
+            const padron = await this.queryToIntersect(this.url_padrones, graphic, "PADRON");
+            const depto = await this.queryToIntersect(this.url_deptos, graphic, "NOMBRE");
+            const limiteNacional = await this.queryToIntersect(this.url_limiteNacional, graphic, "OBJECTID");
+            // Restaurar los atributos y asignar el id original desde el Map
+            graphic.attributes.padron = padron[0];
+            graphic.attributes.departamento = depto[0];
+            graphic.attributes.seccional_policial = sp[0];
+            graphic.attributes.esTerritorioNacional = limiteNacional.length > 0;
+            // Agregar el gráfico actualizado al array
+            updatedGraphics.push(graphic);
+          });
+          // Esperar a que todas las promesas se resuelvan
+          await Promise.all(updatePromises);
+          // Convertir la colección de gráficos a GeoJSON y enviar el mensaje
+          const geojson = graphicCollectionToGeoJSON(updatedGraphics);
+          console.log(geojson);
+          if (geojson != null) this.messageService.sendMessageToParent('UPDATE_FEATURE', { "geojson": geojson });
+          else console.log("Error en armado de GeoJson: Método UPDATE")
+        }
+
+      } else {
+        if (event.state === 'start' && event.graphics.length == 1) {
+          const graphic = event.graphics[0];
+          if (graphic) {
+            const id = graphic.attributes?.id;
+            if (id && this.graphicInProcess.attributes.id === id) {
+              this.messageService.sendMessageToParent('FEATURE_SELECTED', { id: id });
+            } else this.sketch.cancel();
+          }
+        }
+        const updatedGraphics: Graphic[] = [];
+        if (event.toolEventInfo && event.toolEventInfo.type === "move-stop") {
+          // Crear un array de promesas para esperar a que todas las consultas se completen
+          const updatePromises = event.graphics.map(async (graphic) => {
+            console.log("El punto ha sido movido: ", graphic.geometry);
+            console.log(graphic);
+            const sp = await this.queryToIntersect(this.url_sp, graphic, "SECCION");
+            const padron = await this.queryToIntersect(this.url_padrones, graphic, "PADRON");
+            const depto = await this.queryToIntersect(this.url_deptos, graphic, "NOMBRE");
+            const limiteNacional = await this.queryToIntersect(this.url_limiteNacional, graphic, "OBJECTID");
+            // Restaurar los atributos y asignar el id original desde el Map
+            graphic.attributes.padron = padron[0];
+            graphic.attributes.departamento = depto[0];
+            graphic.attributes.seccional_policial = sp[0];
+            graphic.attributes.esTerritorioNacional = limiteNacional.length > 0;
+            // Agregar el gráfico actualizado al array
+            updatedGraphics.push(graphic);
+          });
+          // Esperar a que todas las promesas se resuelvan
+          await Promise.all(updatePromises);
+          // Convertir la colección de gráficos a GeoJSON y enviar el mensaje
+          const geojson = graphicCollectionToGeoJSON(updatedGraphics);
+          console.log(geojson);
+          if (geojson != null) this.messageService.sendMessageToParent('UPDATE_FEATURE', { "geojson": geojson });
+          else console.log("Error en armado de GeoJson: Método UPDATE")
+        }
+      }
+    });
+
+  }
+
+  private sketchDelete() {
+    // Manejo del evento 'delete'
     this.sketch.on("delete", (event) => {
       const deletedIds: string[] = [];
       event.graphics.forEach((graphic) => {
@@ -493,17 +493,17 @@ export class GraphicComponent implements OnInit, OnDestroy {
   }
   private activateCreatePointMode() {
     this.sketch.create('point');
-  }  
+  }
   private cancelCreatePointMode() {
     this.sketch.cancel();
-  }  
-//Método para Padre
-  private parentDeletingGraphics(ids: string[]){
-    if (ids.length > 0){
+  }
+  //Método para Padre
+  private parentDeletingGraphics(ids: string[]) {
+    if (ids.length > 0) {
       const deletedIds: string[] = [];
       ids.forEach(id => {
         const graphic = this.graphicLayer.graphics.find(g => g.attributes.id == id);
-        if (graphic){
+        if (graphic) {
           this.graphicLayer.remove(graphic);
           console.log('${id} eliminado');
           deletedIds.push(id);
@@ -518,10 +518,10 @@ export class GraphicComponent implements OnInit, OnDestroy {
     }
   }
   //Método para cargar capas que intersectan puntos
-  private loadLayersToIntersect(){
-    if(environment){
-      environment.urls_layers.forEach(l => {        
-        switch (l.description){
+  private loadLayersToIntersect() {
+    if (environment) {
+      environment.urls_layers.forEach(l => {
+        switch (l.description) {
           case 'Departamentos':
             this.url_deptos = l.url;
             break;
@@ -534,33 +534,33 @@ export class GraphicComponent implements OnInit, OnDestroy {
           case 'Seccionales Policiales':
             this.url_sp = l.url;
             break;
-        }                
+        }
       });
     }
   }
-  private queryToIntersect(url: string, graphic: Graphic, field: string): Promise<string[]>{
+  private queryToIntersect(url: string, graphic: Graphic, field: string): Promise<string[]> {
     return new Promise((resolve, reject) => {
       // Consultar las entidades cercanas al punto
-      var featureLayer = new FeatureLayer({url: url})
+      var featureLayer = new FeatureLayer({ url: url })
       var query = featureLayer.createQuery();
       query.geometry = graphic.geometry; // Buffer de 1000 metros alrededor del punto
       //query.geometry = geometryEngine.buffer(point, 1000); // Buffer de 1000 metros alrededor del punto
       query.spatialRelationship = "intersects"; // Relación espacial
       query.returnGeometry = false;
       query.outFields = [field];
-  
-      featureLayer.queryFeatures(query).then(function(response) {
+
+      featureLayer.queryFeatures(query).then(function (response) {
         // Procesar los resultados de la consulta
         var features = response.features;
-        var deptos = features.map(function(feature) {
+        var deptos = features.map(function (feature) {
           return feature.attributes[field]; // Obtener el valor del campo "DEPTO"
         });
-  
+
         resolve(deptos); // Devolver los valores del campo "DEPTO"
-      }).catch(function(error) {
+      }).catch(function (error) {
         console.error("Error en la consulta: ", error);
         reject(error);
-      });      
+      });
     })
   }
 }
@@ -569,20 +569,20 @@ export class GraphicComponent implements OnInit, OnDestroy {
 
 
 
-export function graphicCollectionToGeoJSON(graphics: Graphic[]){
-  if(graphics.length > 0){
+export function graphicCollectionToGeoJSON(graphics: Graphic[]) {
+  if (graphics.length > 0) {
     console.log(graphics.length);
     let features: {}[] = [];
     const graphicCollection = {
-                                type: "FeatureCollection",
-                                features: features 
-                              };
-    graphics.forEach( graphic => 
+      type: "FeatureCollection",
+      features: features
+    };
+    graphics.forEach(graphic =>
       graphicCollection.features.push({
-                                      type: "Feature",
-                                      geometry: graphic.geometry.toJSON(),
-                                      properties: graphic.attributes
-                                      }));
+        type: "Feature",
+        geometry: graphic.geometry?.toJSON() ?? null,
+        properties: graphic.attributes
+      }));
     return graphicCollection;
   } else {
     return null;
@@ -592,7 +592,7 @@ export function graphicCollectionToGeoJSON(graphics: Graphic[]){
 export function graphicToGeoJSON(graphic: Graphic) {
   return {
     type: "Feature",
-    geometry: graphic.geometry.toJSON(),
+    geometry: graphic.geometry?.toJSON() ?? null,
     properties: graphic.attributes
   };
 }
