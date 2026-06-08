@@ -10,6 +10,7 @@ import Expand from '@arcgis/core/widgets/Expand';
 import Point from '@arcgis/core/geometry/Point';
 import Sketch from '@arcgis/core/widgets/Sketch'; // Import the 'Sketch' class
 import LayerList from '@arcgis/core/widgets/LayerList';
+import Search from '@arcgis/core/widgets/Search';
 import { MessageService } from '../message.service';
 import Polyline from '@arcgis/core/geometry/Polyline';
 import Polygon from '@arcgis/core/geometry/Polygon';
@@ -52,6 +53,8 @@ export class GraphicComponent implements OnInit, OnDestroy {
   private drawLayer: GraphicsLayer;
   private drawSketch: Sketch;
   private bkExpand_Draw: Expand;
+  private searchWidget: Search;
+  private bkExpand_SearchWidget: Expand;
 
 
   constructor(
@@ -121,6 +124,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
         this.setupGraphicsLayer();
         this.setupSketch();
         this.setupDrawSketch();
+        this.setupSearchFeature();
         this.setupLayerList();
         this.setupHoverEffect();
         this.bkExpand_Sketch.visible = false;
@@ -192,6 +196,9 @@ export class GraphicComponent implements OnInit, OnDestroy {
     }
     if (this.drawLayer && this.map) {
       this.map.remove(this.drawLayer);
+    }
+    if (this.searchWidget) {
+      this.searchWidget.destroy();
     }
   }
 
@@ -413,6 +420,153 @@ export class GraphicComponent implements OnInit, OnDestroy {
       });
       this.messageService.sendMessageToParent('DRAW_DELETED', { "ids": deletedIds });
     });
+  }
+
+  setupSearchFeature() {
+    if (!environment.enableSearchFeature) {
+      return;
+    }
+
+    const searchSources: any[] = [];
+
+    // 1. Add known FeatureLayers from query layer URLs
+    if (this.url_deptos) {
+      searchSources.push({
+        layer: new FeatureLayer({
+          url: this.url_deptos,
+          title: "Departamentos"
+        }),
+        searchFields: ["NOMBRE"],
+        displayField: "NOMBRE",
+        exactMatch: false,
+        outFields: ["*"],
+        name: "Departamentos",
+        placeholder: "Buscar departamento..."
+      });
+    }
+
+    if (this.url_padrones) {
+      searchSources.push({
+        layer: new FeatureLayer({
+          url: this.url_padrones,
+          title: "Padrones"
+        }),
+        searchFields: ["PADRON"],
+        displayField: "PADRON",
+        exactMatch: false,
+        outFields: ["*"],
+        name: "Padrones",
+        placeholder: "Buscar padrón..."
+      });
+    }
+
+    if (this.url_sp) {
+      searchSources.push({
+        layer: new FeatureLayer({
+          url: this.url_sp,
+          title: "Seccionales Policiales"
+        }),
+        searchFields: ["SECCION"],
+        displayField: "SECCION",
+        exactMatch: false,
+        outFields: ["*"],
+        name: "Seccionales Policiales",
+        placeholder: "Buscar seccional..."
+      });
+    }
+
+    // 2. Discover any FeatureLayers added to the map and add them to search sources
+    const mapFeatureLayers = this.map.layers.filter(l => l.type === "feature").toArray() as FeatureLayer[];
+    mapFeatureLayers.forEach(layer => {
+      const searchFields = layer.fields
+        ? layer.fields
+            .filter(f => f.type === "string" || f.type === "integer" || f.type === "oid")
+            .map(f => f.name)
+        : ["*"];
+      
+      let displayField = layer.fields?.find(f => f.name.toLowerCase() === "name" || f.name.toLowerCase() === "nombre")?.name;
+      if (!displayField && layer.fields) {
+        displayField = layer.fields.find(f => f.type === "string")?.name || layer.objectIdField;
+      }
+
+      searchSources.push({
+        layer: layer,
+        searchFields: searchFields.length > 0 ? searchFields : [layer.objectIdField],
+        displayField: displayField || layer.objectIdField,
+        exactMatch: false,
+        outFields: ["*"],
+        name: layer.title || "Capa",
+        placeholder: `Buscar en ${layer.title || 'capa'}...`
+      });
+    });
+
+    // Create the search widget
+    this.searchWidget = new Search({
+      view: this.view,
+      includeDefaultSources: false,
+      allPlaceholder: "Buscar en capa...",
+      sources: searchSources
+    });
+
+    // Watch for new layers added dynamically to the map to update search sources
+    this.map.layers.on("change", () => {
+      this.updateSearchSources();
+    });
+
+    // Wrap Search Widget in a premium Expand widget at the top-left
+    this.bkExpand_SearchWidget = new Expand({
+      view: this.view,
+      content: this.searchWidget,
+      expanded: false,
+      expandTooltip: "Buscar en capa seleccionada"
+    });
+
+    this.view.ui.add(this.bkExpand_SearchWidget, "top-left");
+  }
+
+  private updateSearchSources() {
+    if (!this.searchWidget) return;
+
+    const currentSources = [...this.searchWidget.sources.toArray()];
+    
+    // Get list of current layer IDs in the search sources
+    const sourceLayerIds = currentSources
+      .filter((s: any) => s.layer)
+      .map((s: any) => s.layer.id);
+
+    // Get feature layers from the map that are not already in search sources
+    const mapFeatureLayers = this.map.layers.filter(l => l.type === "feature" && !sourceLayerIds.includes(l.id)).toArray() as FeatureLayer[];
+    
+    let sourcesChanged = false;
+
+    mapFeatureLayers.forEach(layer => {
+      const searchFields = layer.fields
+        ? layer.fields
+            .filter(f => f.type === "string" || f.type === "integer" || f.type === "oid")
+            .map(f => f.name)
+        : ["*"];
+      
+      let displayField = layer.fields?.find(f => f.name.toLowerCase() === "name" || f.name.toLowerCase() === "nombre")?.name;
+      if (!displayField && layer.fields) {
+        displayField = layer.fields.find(f => f.type === "string")?.name || layer.objectIdField;
+      }
+
+      currentSources.push({
+        layer: layer,
+        searchFields: searchFields.length > 0 ? searchFields : [layer.objectIdField],
+        displayField: displayField || layer.objectIdField,
+        exactMatch: false,
+        outFields: ["*"],
+        name: layer.title || "Capa",
+        placeholder: `Buscar en ${layer.title || 'capa'}...`
+      } as any);
+
+      sourcesChanged = true;
+    });
+
+    if (sourcesChanged) {
+      this.searchWidget.sources = currentSources as any;
+    }
   }
 
   setupLayerList() {
