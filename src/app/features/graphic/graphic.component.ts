@@ -49,6 +49,9 @@ export class GraphicComponent implements OnInit, OnDestroy {
   private optionToSelectMultiplePoints: boolean;
   private graphicInProcess: Graphic | null;
   private onlyCreate: boolean = true;
+  private drawLayer: GraphicsLayer;
+  private drawSketch: Sketch;
+  private bkExpand_Draw: Expand;
 
 
   constructor(
@@ -117,6 +120,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
         this.view = view;
         this.setupGraphicsLayer();
         this.setupSketch();
+        this.setupDrawSketch();
         this.setupLayerList();
         this.setupHoverEffect();
         this.bkExpand_Sketch.visible = false;
@@ -183,6 +187,12 @@ export class GraphicComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscriptions.forEach(s => s.unsubscribe());
+    if (this.drawSketch) {
+      this.drawSketch.destroy();
+    }
+    if (this.drawLayer && this.map) {
+      this.map.remove(this.drawLayer);
+    }
   }
 
   zoomToFeature(id: string) {
@@ -324,6 +334,85 @@ export class GraphicComponent implements OnInit, OnDestroy {
     });
 
     this.view.ui.add(this.bkExpand_Sketch, 'top-right');
+  }
+
+  setupDrawSketch() {
+    if (!environment.enableDrawTool) {
+      return;
+    }
+    this.drawLayer = new GraphicsLayer();
+    this.map.add(this.drawLayer);
+
+    this.drawSketch = new Sketch({
+      view: this.view,
+      layer: this.drawLayer,
+      creationMode: 'single',
+      availableCreateTools: ['polyline', 'polygon']
+    });
+
+    this.drawSketch.visibleElements = {
+      settingsMenu: false,
+      duplicateButton: false,
+      undoRedoMenu: false,
+      selectionTools: {
+        "rectangle-selection": false,
+        "lasso-selection": false
+      }
+    };
+
+    this.setupDrawSketchEvents();
+
+    this.bkExpand_Draw = new Expand({
+      view: this.view,
+      content: this.drawSketch,
+      expanded: false
+    });
+
+    this.view.ui.add(this.bkExpand_Draw, 'top-right');
+  }
+
+  private setupDrawSketchEvents() {
+    this.drawSketch.on('create', (event) => {
+      if (event.state === 'complete') {
+        const graphic = event.graphic;
+        graphic.attributes = {
+          id: uuid()
+        };
+        const geojson = graphicToGeoJSON(graphic);
+        if (geojson != null) {
+          this.messageService.sendMessageToParent('DRAW_CREATED', { "geojson": geojson });
+        }
+      }
+    });
+
+    this.drawSketch.on('update', (event) => {
+      if (event.toolEventInfo && event.toolEventInfo.type === "move-stop") {
+        const updatedGraphics: Graphic[] = [];
+        event.graphics.forEach(g => {
+          if (!g.attributes) {
+            g.attributes = {};
+          }
+          if (!g.attributes.id) {
+            g.attributes.id = uuid();
+          }
+          updatedGraphics.push(g);
+        });
+        const geojson = graphicCollectionToGeoJSON(updatedGraphics);
+        if (geojson != null) {
+          this.messageService.sendMessageToParent('DRAW_UPDATED', { "geojson": geojson });
+        }
+      }
+    });
+
+    this.drawSketch.on('delete', (event) => {
+      const deletedIds: string[] = [];
+      event.graphics.forEach((graphic) => {
+        if (graphic.attributes && graphic.attributes.id) {
+          deletedIds.push(graphic.attributes.id);
+        }
+      });
+      this.messageService.sendMessageToParent('DRAW_DELETED', { "ids": deletedIds });
+    });
   }
 
   setupLayerList() {
