@@ -1,0 +1,6 @@
+.angular/
+angular.json
+src/environments/environment.ts
+src/environments/environment.development.ts
+
+node_modules

@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <title>ComponenteGisV3</title>
@@ -7,90 +8,104 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <style>
-	#frame {
-		height: 800px;
-		width: 800px
-	}
+    #frame {
+      height: 800px;
+      width: 800px
+    }
   </style>
 
 </head>
-<body>
-<iframe id="frame" src="http://localhost:55025" style="height: 800px; width: 800px;"></iframe>
-	<script>
-	  function sendPoints() {
-		var receiver = document.getElementById('frame').contentWindow;
-		receiver.postMessage({message: "ADD_FEATURES", params: {
-  "type": "FeatureCollection",
-  "features": [
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-56.164532, -34.901112]
-      },
-      "properties": {
-        "id": "5125"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-54.945187, -34.958084]
-      },
-      "properties": {
-		    "id": "1"
-      }    
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-57.1384004269828, -30.325450936322873]
-      },
-      "properties": {
-		    "id": "968534354"
-      }
-    }
-  ]
-}}, "*")};
 
-function Zoom() {
-		var receiver = document.getElementById('frame').contentWindow;
-		receiver.postMessage({message: "ZOOM_TO_FEATURE", params: {
-  "id": "1"}}, "*")
-	  }
-function deletePoints(){
-  let receiver = document.getElementById('frame').contentWindow;
-		receiver.postMessage({message: "DELETE_FEATURES", params: {
-  "ids": ["1", "5125", "968534354"]}}, "*")
-}
-function finishPoint(){
-  let receiver = document.getElementById('frame').contentWindow;
-		receiver.postMessage({message: "FINISHED_POINT", params: {}}, "*")
-}
-function startViewMode(){
-  let receiver = document.getElementById('frame').contentWindow;
-		receiver.postMessage({message: "ONLY_VIEW", params: {}}, "*")
-}
-function findGraphicAndSelect(){
-  let id = document.getElementById('id_to_find').value;
-  let receiver = document.getElementById('frame').contentWindow;
-		receiver.postMessage({message: "UPDATE_FEATURE", params: {
-  "id": id}}, "*");
-}
-	</script>
+<body>
+  <iframe id="frame" src="http://localhost:4200" style="height: 800px; width: 800px;"></iframe>
+  <script>
+    function sendPoints() {
+      var receiver = document.getElementById('frame').contentWindow;
+      receiver.postMessage({
+        message: "ADD_FEATURES", params: {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "geometry": {
+                "type": "Point",
+                "coordinates": [-56.164532, -34.901112]
+              },
+              "properties": {
+                "id": "5125"
+              }
+            },
+            {
+              "type": "Feature",
+              "geometry": {
+                "type": "Point",
+                "coordinates": [-54.945187, -34.958084]
+              },
+              "properties": {
+                "id": "1"
+              }
+            },
+            {
+              "type": "Feature",
+              "geometry": {
+                "type": "Point",
+                "coordinates": [-57.1384004269828, -30.325450936322873]
+              },
+              "properties": {
+                "id": "968534354"
+              }
+            }
+          ]
+        }
+      }, "*")
+    };
+
+    function Zoom() {
+      var receiver = document.getElementById('frame').contentWindow;
+      receiver.postMessage({
+        message: "ZOOM_TO_FEATURE", params: {
+          "id": "1"
+        }
+      }, "*")
+    }
+    function deletePoints() {
+      let receiver = document.getElementById('frame').contentWindow;
+      receiver.postMessage({
+        message: "DELETE_FEATURES", params: {
+          "ids": ["1", "5125", "968534354"]
+        }
+      }, "*")
+    }
+    function finishPoint() {
+      let receiver = document.getElementById('frame').contentWindow;
+      receiver.postMessage({ message: "FINISHED_POINT", params: {} }, "*")
+    }
+    function startViewMode() {
+      let receiver = document.getElementById('frame').contentWindow;
+      receiver.postMessage({ message: "ONLY_VIEW", params: {} }, "*")
+    }
+    function findGraphicAndSelect() {
+      let id = document.getElementById('id_to_find').value;
+      let receiver = document.getElementById('frame').contentWindow;
+      receiver.postMessage({
+        message: "UPDATE_FEATURE", params: {
+          "id": id
+        }
+      }, "*");
+    }
+  </script>
   </br>
-	<button onclick="sendPoints()" >ENVIAR PUNTOS </button>
-	<button onclick="Zoom()" >Zoom punto </button>
-	<button onclick="deletePoints()" >Borrar puntos </button>
-	<button onclick="finishPoint()" >Terminar Punto </button>
-	<button onclick="startViewMode()" >Modo Vista </button>
+  <button onclick="sendPoints()">ENVIAR PUNTOS </button>
+  <button onclick="Zoom()">Zoom punto </button>
+  <button onclick="deletePoints()">Borrar puntos </button>
+  <button onclick="finishPoint()">Terminar Punto </button>
+  <button onclick="startViewMode()">Modo Vista </button>
   <input id="id_to_find">
-	<button onclick="findGraphicAndSelect()" >Encontrar Punto </button>
-	
-	<script>
-	  addEventListener('message', (e) => console.log("llego", e));
-	</script>
-	</body>
-	</html>
+  <button onclick="findGraphicAndSelect()">Encontrar Punto </button>
+
+  <script>
+    addEventListener('message', (e) => console.log("llego", e));
+  </script>
+</body>
+
+</html>
