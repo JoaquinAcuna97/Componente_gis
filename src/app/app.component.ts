@@ -5,6 +5,7 @@ import {
   ElementRef,
   OnDestroy,
   ChangeDetectorRef,
+  Inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
@@ -22,7 +23,7 @@ import Portal from '@arcgis/core/portal/Portal';
 import { BehaviorSubject } from 'rxjs';
 import { LayerService } from './services/layer.service';
 import { LayerComponent } from './features/layer/layer.component';
-import { environment } from '../environments/environment';
+import { APP_CONFIG_TOKEN, AppConfig } from './core/config/app.config';
 import Extent from '@arcgis/core/geometry/Extent';
 
 @Component({
@@ -44,7 +45,8 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     private layerService: LayerService,
     private messageService: MessageService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    @Inject(APP_CONFIG_TOKEN) private appConfig: AppConfig
   ) {}
 
   // The <div> where we will place the map
@@ -58,7 +60,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.map = new Map( {
       basemap: {
         portalItem: {
-          id: environment.id_base_map //Streets (WGS84)
+          id: this.appConfig.idBaseMap //Streets (WGS84)
         },        
       }
     });    
@@ -107,7 +109,7 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.setupLayerSubscription();
     this.messageService.listenMessageFromParent();
-    esriConfig.portalUrl = environment.url_portal;
+    esriConfig.portalUrl = this.appConfig.urlPortal;
 
     let portalInstance = new Portal();
     portalInstance
