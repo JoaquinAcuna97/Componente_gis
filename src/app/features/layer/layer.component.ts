@@ -1,9 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { LayerService } from '../../services/layer.service';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import { environment } from '../../../environments/environment';
 import WMSLayer from "@arcgis/core/layers/WMSLayer.js";
-
+import { LAYER_CONFIGS } from '../../core/config/layer.config';
 
 export interface Layer {
               url: string,
@@ -23,12 +22,13 @@ export class LayerComponent implements OnInit {
   private urls_services: Layer[]
 
   constructor(private layerService: LayerService) {
-   if(environment){
-    this.urls_services = [];
-    environment.urls_layers.forEach((l) => {
-      this.urls_services.push(l as Layer);
-    })
-   }
+    this.urls_services = LAYER_CONFIGS.map(l => ({
+      url: l.url,
+      description: l.description,
+      type: l.type as 'WMS' | 'Feature',
+      show: l.show,
+      visible: l.visible
+    }));
   }
 
   ngOnInit() {

@@ -1,9 +1,7 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, Inject } from '@angular/core';
 import Map from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
-import Color from '@arcgis/core/Color';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
-import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol';
 import Graphic from '@arcgis/core/Graphic';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Expand from '@arcgis/core/widgets/Expand';
@@ -17,8 +15,10 @@ import { BehaviorSubject, Subscription } from 'rxjs';
 import Extent from '@arcgis/core/geometry/Extent';
 import { v4 as uuid } from 'uuid';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import { environment } from '../../../environments/environment';
 import { LayerService } from '../../services/layer.service';
+import { APP_CONFIG_TOKEN, AppConfig } from '../../core/config/app.config';
+import { MAP_CONFIG } from '../../core/config/map.config';
+import { LAYER_CONFIGS } from '../../core/config/layer.config';
 
 @Component({
   selector: 'app-graphic',
@@ -53,32 +53,16 @@ export class GraphicComponent implements OnInit, OnDestroy {
 
   constructor(
     private messageService: MessageService,
-    private layerService: LayerService
+    private layerService: LayerService,
+    @Inject(APP_CONFIG_TOKEN) private appConfig: AppConfig
   ) 
   { 
     this.loadLayersToIntersect();
     // simbología para puntos
     // Definir el símbolo de agrandamiento
-    this.largeSymbol = new SimpleMarkerSymbol({
-      style: "circle",
-      color: new Color(environment.puntos.color_ptos_hover),
-      size: environment.puntos.pto_size_hover,
-      outline: new SimpleLineSymbol({
-        color: new Color(environment.puntos.color_ptos_outline),
-        width: 2
-      })
-    });  
-    this.originalSymbol = new SimpleMarkerSymbol({
-      style: "circle",
-      color: new Color(environment.puntos.color_ptos_static),
-      size: environment.puntos.pto_size_static,
-      outline: new SimpleLineSymbol({
-        color: new Color(environment.puntos.color_ptos_outline),
-        width: 1
-      })
-    });
-    this.optionToSelectMultiplePoints = environment.multiplePointSelection;
-    
+    this.largeSymbol = MAP_CONFIG.hoverPointSymbol;
+    this.originalSymbol = MAP_CONFIG.defaultPointSymbol;
+    this.optionToSelectMultiplePoints = this.appConfig.multiplePointSelection;
   }
 
   private enableSketchAfterPointCreated(){
@@ -519,24 +503,22 @@ export class GraphicComponent implements OnInit, OnDestroy {
   }
   //Método para cargar capas que intersectan puntos
   private loadLayersToIntersect(){
-    if(environment){
-      environment.urls_layers.forEach(l => {        
-        switch (l.description){
-          case 'Departamentos':
-            this.url_deptos = l.url;
-            break;
-          case 'Limite Nacional':
-            this.url_limiteNacional = l.url;
-            break;
-          case 'Padrones':
-            this.url_padrones = l.url;
-            break;
-          case 'Seccionales Policiales':
-            this.url_sp = l.url;
-            break;
-        }                
-      });
-    }
+    LAYER_CONFIGS.forEach(l => {        
+      switch (l.description){
+        case 'Departamentos':
+          this.url_deptos = l.url;
+          break;
+        case 'Limite Nacional':
+          this.url_limiteNacional = l.url;
+          break;
+        case 'Padrones':
+          this.url_padrones = l.url;
+          break;
+        case 'Seccionales Policiales':
+          this.url_sp = l.url;
+          break;
+      }                
+    });
   }
   private queryToIntersect(url: string, graphic: Graphic, field: string): Promise<string[]>{
     return new Promise((resolve, reject) => {
