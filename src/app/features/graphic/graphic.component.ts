@@ -12,6 +12,7 @@ import { MessageService } from '../message.service';
 
 import Polyline from '@arcgis/core/geometry/Polyline';
 import Polygon from '@arcgis/core/geometry/Polygon';
+import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import Extent from '@arcgis/core/geometry/Extent';
 import { v4 as uuid } from 'uuid';
@@ -45,7 +46,8 @@ export class GraphicComponent implements OnInit, OnDestroy {
   private url_padrones: string;
   private url_deptos: string;
   private url_limiteNacional: string;
-  private largeSymbol: SimpleMarkerSymbol;
+  private largeSymbol: SimpleMarkerSymbol; // for point zoom
+  private polygonSymbol: SimpleFillSymbol; // for polygon rendering
   private originalSymbol: SimpleMarkerSymbol;
   private isPointFinished: boolean = true;
   private optionToSelectMultiplePoints: boolean;
@@ -63,6 +65,11 @@ export class GraphicComponent implements OnInit, OnDestroy {
     // simbología para puntos
     // Definir el símbolo de agrandamiento
     this.largeSymbol = MAP_CONFIG.hoverPointSymbol;
+    // Initialize polygon symbol (fallback if not provided in config)
+    this.polygonSymbol = (MAP_CONFIG as any).defaultPolygonSymbol || new SimpleFillSymbol({
+      color: [227, 139, 79, 0.4], // semi-transparent fill
+      outline: { color: [227, 139, 79, 1], width: 2 }
+    });
     this.originalSymbol = MAP_CONFIG.defaultPointSymbol;
     this.optionToSelectMultiplePoints = this.appConfig.multiplePointSelection;
   }
@@ -288,14 +295,21 @@ export class GraphicComponent implements OnInit, OnDestroy {
         const props = f.properties || {};
         const id = props.id ?? f.attributes?.PADRON ?? f.attributes?.CODDEPTO;
         if (f.geometry && f.geometry.type) {
-          // Ensure the feature has an id property for createGraphicFromGeoJSON
+          // Ensure the feature has an id property for later selection
           f.properties = { ...(f.properties || {}), id };
-          const graphic = createGraphicFromGeoJSON(f, this.originalSymbol);
+          // Choose appropriate symbol based on geometry type
+          let symbol: any = this.originalSymbol;
+          if (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon') {
+            symbol = this.polygonSymbol;
+          }
+          const graphic = createGraphicFromGeoJSON(f, symbol);
           this.graphicLayer.add(graphic);
         } else {
           console.warn('Skipping feature due to missing geometry or id', f);
         }
       });
+      // Zoom to fit all newly added graphics (polygons and points)
+      this.zoomToAllFeatures();
     }
   }
   setupGraphicsLayer() {
