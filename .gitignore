@@ -1,4 +1,5 @@
 .angular/
+.openpost/
 angular.json
 dist
 node_modules
