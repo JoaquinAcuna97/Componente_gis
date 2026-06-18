@@ -12,7 +12,16 @@
     "lint:fix": "ng lint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "ng test --watch=false --browsers=ChromeHeadless"
+    "test": "ng test --watch=false --browsers=ChromeHeadless",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,html}": [
+      "eslint --fix"
+    ],
+    "*.{json,scss,css,md}": [
+      "prettier --write"
+    ]
   },
   "private": true,
   "dependencies": {
