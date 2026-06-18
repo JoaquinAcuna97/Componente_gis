@@ -270,13 +270,17 @@ export class GraphicComponent implements OnInit, OnDestroy {
 
   addGraphics(featureCollection: any) {
     console.log(featureCollection);
-    if (featureCollection && featureCollection.features) {
+    if (featureCollection && Array.isArray(featureCollection.features)) {
       featureCollection.features.forEach((f: any) => {
-        if (f.properties.id != null && f.properties.id != "") {
-          // Crear un gráfico a partir de cada feature
-          let graphic = createGraphicFromGeoJSON(f, this.originalSymbol);
-          // Agregar el gráfico a la capa
+        const props = f.properties || {};
+        const id = props.id ?? f.attributes?.PADRON ?? f.attributes?.CODDEPTO;
+        if (f.geometry && f.geometry.type) {
+          // Ensure the feature has an id property for createGraphicFromGeoJSON
+          f.properties = { ...(f.properties || {}), id };
+          const graphic = createGraphicFromGeoJSON(f, this.originalSymbol);
           this.graphicLayer.add(graphic);
+        } else {
+          console.warn('Skipping feature due to missing geometry or id', f);
         }
       });
     }

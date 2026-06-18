@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { tap } from 'rxjs';
 import { Observable } from 'rxjs';
 
 /**
@@ -32,13 +33,15 @@ export class PadronService {
     }
     const where = whereClauses.join(' OR ');
     const params = new URLSearchParams({
-      f: 'json',
+      f: 'geojson',
       outFields: 'CODDEPTO,PADRON,NOMDEPTO',
       returnGeometry: 'true',
       where: where,
       resultRecordCount: '10' // keep limit as per user request
     });
     const url = `${this.baseUrl}?${params.toString()}`;
-    return this.http.get<any>(url);
+    return this.http.get<any>(url).pipe(
+      tap(res => console.log(res, 'padrones response'))
+    );
   }
 }
