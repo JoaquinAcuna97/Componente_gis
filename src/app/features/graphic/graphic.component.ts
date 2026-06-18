@@ -270,6 +270,19 @@ export class GraphicComponent implements OnInit, OnDestroy {
 
   addGraphics(featureCollection: any) {
     console.log(featureCollection);
+    if (featureCollection && featureCollection.features) {
+      featureCollection.features.forEach((f: any) => {
+        if (f.properties.id != null && f.properties.id != "") {
+          // Crear un gráfico a partir de cada feature
+          let graphic = createGraphicFromGeoJSON(f, this.originalSymbol);
+          // Agregar el gráfico a la capa
+          this.graphicLayer.add(graphic);
+        }
+      });
+    }
+  }
+  addGraphicsPoligon(featureCollection: any) {
+    console.log(featureCollection);
     if (featureCollection && Array.isArray(featureCollection.features)) {
       featureCollection.features.forEach((f: any) => {
         const props = f.properties || {};
@@ -285,7 +298,6 @@ export class GraphicComponent implements OnInit, OnDestroy {
       });
     }
   }
-
   setupGraphicsLayer() {
     this.graphicLayer = this.layerService.getGraphicLayer();
     this.map.add(this.graphicLayer);
@@ -498,7 +510,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
     this.padronService.fetchPadronGeometries(map).subscribe(featureCollection => {
       if (featureCollection) {
         // Add graphics to map
-        this.addGraphics(featureCollection);
+        this.addGraphicsPoligon(featureCollection);
         // Notify parent with results
         this.messageService.sendMessageToParent('PADRON_FOUND', { results: featureCollection.features });
       }
