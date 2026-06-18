@@ -1,6 +1,7 @@
 # Componente GIS v3
 
 Un componente de Sistema de Información Geográfica (GIS) desarrollado en Angular que integra mapas interactivos usando ArcGIS API for JavaScript. Este proyecto está diseñado para visualizar y manipular datos geoespaciales del MGAP (Ministerio de Ganadería, Agricultura y Pesca) de Uruguay.
+
 ## Development server
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
@@ -75,6 +76,12 @@ npm install -g @angular/cli
 npm install
 ```
 
+### 4. Configurar Husky (hooks de Git)
+
+```bash
+npx husky install
+```
+
 ## ⚙️ Configuración
 
 ### Variables de Entorno
@@ -84,46 +91,47 @@ El proyecto utiliza archivos de configuración en `src/environments/`:
 - `environment.ts` - Configuración para producción
 - `environment.development.ts` - Configuración para desarrollo
 
-#### Configuraciones principales en `environment.ts`:
+#### Configuraciones principales en `environment.ts`
 
 ```typescript
 export const environment = {
-    // ID del mapa base de ArcGIS
-    id_base_map: "cd40d1d0eae943039075856b87686c11",
-    
-    // URL del portal de mapas
-    url_portal: "https://mapastest.mgap.gub.uy/portal",
-    
-    // Configuración de capas disponibles
-    urls_layers: [
-        // Array de capas con URLs, descripciones y configuraciones
-        //Ejemplo:
-        {
-            url: 'https://geoservicios.mtop.gub.uy/geoserver/inf_tte_ttelog_terrestre/v_camineria_nacional/wms?request=GetCapabilities',
-            description: 'Rutas Nacionales',
-            type: 'WMS',
-            show: true,
-            visible: true
-        },{
-            url: 'https://mapastest.mgap.gub.uy/arcgis/rest/services/SNIA_Temas/Calles_Uy/MapServer',
-            description: 'Calles',
-            type: 'Feature',
-            show: true,
-            visible: false
-        },
-    ],
-    
-    // Configuración de puntos
-    puntos: {
-        color_ptos_static: [0, 0, 255],    // Color azul
-        color_ptos_hover: [255, 0, 0],     // Color rojo
-        color_ptos_outline: [255, 255, 255], // Color blanco
-        pto_size_static: 10,               // Tamaño normal
-        pto_size_hover: 20                 // Tamaño al hacer hover
+  // ID del mapa base de ArcGIS
+  id_base_map: 'cd40d1d0eae943039075856b87686c11',
+
+  // URL del portal de mapas
+  url_portal: 'https://mapastest.mgap.gub.uy/portal',
+
+  // Configuración de capas disponibles
+  urls_layers: [
+    // Array de capas con URLs, descripciones y configuraciones
+    //Ejemplo:
+    {
+      url: 'https://geoservicios.mtop.gub.uy/geoserver/inf_tte_ttelog_terrestre/v_camineria_nacional/wms?request=GetCapabilities',
+      description: 'Rutas Nacionales',
+      type: 'WMS',
+      show: true,
+      visible: true,
     },
-    
-    // Habilitar/deshabilitar selección múltiple
-    multiplePointSelection: false
+    {
+      url: 'https://mapastest.mgap.gub.uy/arcgis/rest/services/SNIA_Temas/Calles_Uy/MapServer',
+      description: 'Calles',
+      type: 'Feature',
+      show: true,
+      visible: false,
+    },
+  ],
+
+  // Configuración de puntos
+  puntos: {
+    color_ptos_static: [0, 0, 255], // Color azul
+    color_ptos_hover: [255, 0, 0], // Color rojo
+    color_ptos_outline: [255, 255, 255], // Color blanco
+    pto_size_static: 10, // Tamaño normal
+    pto_size_hover: 20, // Tamaño al hacer hover
+  },
+
+  // Habilitar/deshabilitar selección múltiple
+  multiplePointSelection: false,
 };
 ```
 
@@ -210,21 +218,27 @@ ComponenteGISv3/
 ## 🔧 Componentes Principales
 
 ### AppComponent
+
 Componente principal que inicializa el mapa y coordina los demás componentes.
 
 ### LayerComponent
+
 Maneja la visualización y control de capas del mapa.
 
 ### GraphicComponent
+
 Gestiona la creación y manipulación de elementos gráficos.
 
 ### DrawComponent
+
 Proporciona herramientas de dibujo para crear geometrías.
 
 ### LayerService
+
 Servicio que maneja la lógica de negocio relacionada con las capas.
 
 ### MessageService
+
 Servicio de comunicación entre componentes.
 
 ## 📡 API de Comunicaciones (PostMessage)
@@ -233,49 +247,52 @@ El componente implementa un sistema de comunicación bidireccional con la aplica
 
 ### Mensajes que Recibe del Padre
 
-| Mensaje | Parámetros | Descripción |
-|---------|------------|-------------|
-| `ADD_FEATURES` | `{ features: GeoJSON_FeatureCollection }` | Añade múltiples features al mapa |
-| `ZOOM_TO_FEATURE` | `{ id: string }` | Hace zoom a un feature específico por ID |
-| `DELETE_FEATURES` | `{ ids: string[] }` | Elimina features del mapa por sus IDs |
-| `FINISHED_POINT` | `{}` | Finaliza la creación de un punto en progreso |
-| `ONLY_VIEW` | `{}` | Cambia a modo solo visualización (sin edición) |
-| `UPDATE_FEATURE` | `{ id: string }` | Pone un feature en modo edición por ID |
+| Mensaje           | Parámetros                                | Descripción                                    |
+| ----------------- | ----------------------------------------- | ---------------------------------------------- |
+| `ADD_FEATURES`    | `{ features: GeoJSON_FeatureCollection }` | Añade múltiples features al mapa               |
+| `ZOOM_TO_FEATURE` | `{ id: string }`                          | Hace zoom a un feature específico por ID       |
+| `DELETE_FEATURES` | `{ ids: string[] }`                       | Elimina features del mapa por sus IDs          |
+| `FINISHED_POINT`  | `{}`                                      | Finaliza la creación de un punto en progreso   |
+| `ONLY_VIEW`       | `{}`                                      | Cambia a modo solo visualización (sin edición) |
+| `UPDATE_FEATURE`  | `{ id: string }`                          | Pone un feature en modo edición por ID         |
 
 ### Mensajes que Envía al Padre
 
-| Mensaje | Parámetros | Descripción |
-|---------|------------|-------------|
-| `INITIALIZE_COMPLETE` | `{}` | Notifica que el componente terminó de inicializarse |
-| `ADD_FEATURE` | `{ geojson: GeoJSON_Feature }` | Notifica que se creó un nuevo feature |
-| `UPDATE_FEATURE` | `{ geojson: GeoJSON_Feature \| GeoJSON_FeatureCollection }` | Notifica que se actualizó uno o más features |
-| `DELETE_FEATURE` | `{ ids: string[] }` | Notifica que se eliminaron features |
-| `FEATURE_SELECTED` | `{ id: string }` | Notifica que se seleccionó un feature |
-| `FEATURES_SELECTED` | `{ id: string[] }` | Notifica que se seleccionaron múltiples features |
+| Mensaje               | Parámetros                                                  | Descripción                                         |
+| --------------------- | ----------------------------------------------------------- | --------------------------------------------------- |
+| `INITIALIZE_COMPLETE` | `{}`                                                        | Notifica que el componente terminó de inicializarse |
+| `ADD_FEATURE`         | `{ geojson: GeoJSON_Feature }`                              | Notifica que se creó un nuevo feature               |
+| `UPDATE_FEATURE`      | `{ geojson: GeoJSON_Feature \| GeoJSON_FeatureCollection }` | Notifica que se actualizó uno o más features        |
+| `DELETE_FEATURE`      | `{ ids: string[] }`                                         | Notifica que se eliminaron features                 |
+| `FEATURE_SELECTED`    | `{ id: string }`                                            | Notifica que se seleccionó un feature               |
+| `FEATURES_SELECTED`   | `{ id: string[] }`                                          | Notifica que se seleccionaron múltiples features    |
 
 ### Ejemplo de Uso
 
 ```javascript
 // Enviar puntos al componente
 const iframe = document.getElementById('gis-component');
-iframe.contentWindow.postMessage({
-  message: "ADD_FEATURES", 
-  params: {
-    "type": "FeatureCollection",
-    "features": [
-      {
-        "type": "Feature",
-        "geometry": {
-          "type": "Point",
-          "coordinates": [-56.164532, -34.901112]
+iframe.contentWindow.postMessage(
+  {
+    message: 'ADD_FEATURES',
+    params: {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [-56.164532, -34.901112],
+          },
+          properties: {
+            id: '5125',
+          },
         },
-        "properties": {
-          "id": "5125"
-        }
-      }
-    ]
-  }
-}, "*");
+      ],
+    },
+  },
+  '*'
+);
 
 // Escuchar respuestas del componente
 window.addEventListener('message', (event) => {
@@ -301,7 +318,7 @@ El proyecto consume varios servicios web del MGAP:
 
 - **Rutas Nacionales**: WMS de MTOP
 - **Capas vectoriales**: ArcGIS REST Services
-- **Portal de mapas**: https://mapastest.mgap.gub.uy/portal
+- **Portal de mapas**: <https://mapastest.mgap.gub.uy/portal>
 
 ## 🔐 Configuración de Seguridad
 
@@ -314,21 +331,23 @@ Para producción, asegúrate de:
 
 ## 📝 Scripts Disponibles
 
-| Script | Comando | Descripción |
-|--------|---------|-------------|
-| `start` | `ng serve` | Inicia servidor de desarrollo |
-| `build` | `ng build` | Construcción estándar |
-| `build:test` | `ng build --configuration=development --base-href componente_gis/` | Build para testing |
-| `build:prod` | `ng build --configuration=production --base-href /componente_gis/` | Build para producción |
-| `watch` | `ng build --watch --configuration development` | Build con watch mode |
-| `test` | `ng test` | Ejecuta pruebas unitarias |
+| Script       | Comando                                                            | Descripción                   |
+| ------------ | ------------------------------------------------------------------ | ----------------------------- |
+| `start`      | `ng serve`                                                         | Inicia servidor de desarrollo |
+| `build`      | `ng build`                                                         | Construcción estándar         |
+| `build:test` | `ng build --configuration=development --base-href componente_gis/` | Build para testing            |
+| `build:prod` | `ng build --configuration=production --base-href /componente_gis/` | Build para producción         |
+| `watch`      | `ng build --watch --configuration development`                     | Build con watch mode          |
+| `test`       | `ng test`                                                          | Ejecuta pruebas unitarias     |
 
 ## 🐛 Solución de Problemas
 
 ### Error de CORS
+
 Si experimentas errores de CORS, verifica que los servicios web permitan el origen de tu aplicación.
 
 ### Problemas de instalación
+
 ```bash
 # Limpiar caché de npm
 npm cache clean --force
@@ -339,6 +358,7 @@ npm install
 ```
 
 ### Error de ArcGIS API
+
 Verifica que tengas acceso a internet y que los servicios de ArcGIS estén disponibles.
 
 ## 🤝 Contribución
