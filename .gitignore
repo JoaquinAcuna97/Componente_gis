@@ -1,5 +1,5 @@
 .angular/
-angular.json
+.openpost/
 dist
 node_modules
 src/environments/environment.ts
