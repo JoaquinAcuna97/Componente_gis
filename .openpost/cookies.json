@@ -1,0 +1,13 @@
+[
+  {
+    "name": "AGS_ROLES",
+    "value": "\"419jqfa+uOZgYod4xPOQ8Q==\"",
+    "domain": "mapastest.mgap.gub.uy",
+    "path": "/arcgis/rest",
+    "expires": "2026-06-18T12:44:57.477Z",
+    "httpOnly": true,
+    "secure": false,
+    "sameSite": null,
+    "createdAt": "2026-06-18T12:43:57.477Z"
+  }
+]

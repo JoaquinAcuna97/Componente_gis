@@ -1,6 +1,7 @@
 # Componente GIS v3
 
 Un componente de Sistema de Información Geográfica (GIS) desarrollado en Angular que integra mapas interactivos usando ArcGIS API for JavaScript. Este proyecto está diseñado para visualizar y manipular datos geoespaciales del MGAP (Ministerio de Ganadería, Agricultura y Pesca) de Uruguay.
+
 ## Development server
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
@@ -84,7 +85,7 @@ El proyecto utiliza archivos de configuración en `src/environments/`:
 - `environment.ts` - Configuración para producción
 - `environment.development.ts` - Configuración para desarrollo
 
-#### Configuraciones principales en `environment.ts`:
+#### Configuraciones principales en `environment.ts`
 
 ```typescript
 export const environment = {
@@ -210,21 +211,27 @@ ComponenteGISv3/
 ## 🔧 Componentes Principales
 
 ### AppComponent
+
 Componente principal que inicializa el mapa y coordina los demás componentes.
 
 ### LayerComponent
+
 Maneja la visualización y control de capas del mapa.
 
 ### GraphicComponent
+
 Gestiona la creación y manipulación de elementos gráficos.
 
 ### DrawComponent
+
 Proporciona herramientas de dibujo para crear geometrías.
 
 ### LayerService
+
 Servicio que maneja la lógica de negocio relacionada con las capas.
 
 ### MessageService
+
 Servicio de comunicación entre componentes.
 
 ## 📡 API de Comunicaciones (PostMessage)
@@ -241,6 +248,7 @@ El componente implementa un sistema de comunicación bidireccional con la aplica
 | `FINISHED_POINT` | `{}` | Finaliza la creación de un punto en progreso |
 | `ONLY_VIEW` | `{}` | Cambia a modo solo visualización (sin edición) |
 | `UPDATE_FEATURE` | `{ id: string }` | Pone un feature en modo edición por ID |
+| `FIND_PADRON` | `{["L-2514","L-34","M-1212"]}` | Busca uno o mas padrones y los agrega al mapa por ID |
 
 ### Mensajes que Envía al Padre
 
@@ -301,7 +309,7 @@ El proyecto consume varios servicios web del MGAP:
 
 - **Rutas Nacionales**: WMS de MTOP
 - **Capas vectoriales**: ArcGIS REST Services
-- **Portal de mapas**: https://mapastest.mgap.gub.uy/portal
+- **Portal de mapas**: <https://mapastest.mgap.gub.uy/portal>
 
 ## 🔐 Configuración de Seguridad
 
@@ -326,9 +334,11 @@ Para producción, asegúrate de:
 ## 🐛 Solución de Problemas
 
 ### Error de CORS
+
 Si experimentas errores de CORS, verifica que los servicios web permitan el origen de tu aplicación.
 
 ### Problemas de instalación
+
 ```bash
 # Limpiar caché de npm
 npm cache clean --force
@@ -339,6 +349,7 @@ npm install
 ```
 
 ### Error de ArcGIS API
+
 Verifica que tengas acceso a internet y que los servicios de ArcGIS estén disponibles.
 
 ## 🤝 Contribución

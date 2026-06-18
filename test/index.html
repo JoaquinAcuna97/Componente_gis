@@ -18,48 +18,78 @@
 
 <body>
   <iframe id="frame" src="http://localhost:4200" style="height: 800px; width: 800px;"></iframe>
+  <!-- Search Padron UI -->
+  <div style="margin-top:10px;">
+    <input id="padronInput" type="text" placeholder="Ej: L-2514, L-34, M-1212" style="width:300px;" />
+    <button onclick="findPadron()">Buscar</button>
+  </div>
+  <table id="padronResults" border="1" style="margin-top:10px; width:100%; border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th>Departamento</th>
+        <th>Padron</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
   <script>
-    function sendPoints() {
+    function findPadron() {
+      var input = document.getElementById('padronInput').value;
+      if (!input) { return; }
+      var params = input.split(',').map(s => s.trim()).filter(s => s.length > 0);
       var receiver = document.getElementById('frame').contentWindow;
-      receiver.postMessage({
-        message: "ADD_FEATURES", params: {
-          "type": "FeatureCollection",
-          "features": [
-            {
-              "type": "Feature",
-              "geometry": {
-                "type": "Point",
-                "coordinates": [-56.164532, -34.901112]
-              },
-              "properties": {
-                "id": "5125"
-              }
-            },
-            {
-              "type": "Feature",
-              "geometry": {
-                "type": "Point",
-                "coordinates": [-54.945187, -34.958084]
-              },
-              "properties": {
-                "id": "1"
-              }
-            },
-            {
-              "type": "Feature",
-              "geometry": {
-                "type": "Point",
-                "coordinates": [-57.1384004269828, -30.325450936322873]
-              },
-              "properties": {
-                "id": "968534354"
-              }
-            }
-          ]
-        }
-      }, "*")
-    };
+      receiver.postMessage({ message: 'FIND_PADRON', params: params }, '*');
+    }
+    // Ensure global access
+    window.findPadron = findPadron;
+    addEventListener('message', (e) => {
+      if (e.data.message === 'PADRON_FOUND') {
+        var tbody = document.querySelector('#padronResults tbody');
+        tbody.innerHTML = '';
+        e.data.params.results.forEach(f => {
+          var dept = f.attributes ? f.attributes.departamento || f.attributes.CODDEPTO : '';
+          var pad = f.attributes ? f.attributes.padron || f.attributes.PADRON : '';
+          var row = `<tr><td>${dept}</td><td>${pad}</td></tr>`;
+          tbody.insertAdjacentHTML('beforeend', row);
+        });
+      }
+    });
 
+    // Send initial demo features
+    var receiver = document.getElementById('frame').contentWindow;
+    receiver.postMessage({
+      message: "ADD_FEATURES", params: {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [-56.164532, -34.901112]
+            },
+            "properties": { "id": "5125" }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [-54.945187, -34.958084]
+            },
+            "properties": { "id": "1" }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [-57.1384004269828, -30.325450936322873]
+            },
+            "properties": { "id": "968534354" }
+          }
+        ]
+      }
+    }, "*");
+  </script>
+  <script>
     function Zoom() {
       var receiver = document.getElementById('frame').contentWindow;
       receiver.postMessage({

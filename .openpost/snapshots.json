@@ -1,0 +1,41 @@
+[
+  {
+    "id": "1781786014464tcinhvc8fjj",
+    "name": "New Request 6/18/2026, 9:33:34 AM",
+    "createdAt": 1781786014464,
+    "baseRequest": {
+      "id": "1781786014460jtzq",
+      "name": "New Request",
+      "method": "GET",
+      "url": "https://mapastest.mgap.gub.uy/arcgis/rest/services/SNIA_Temas/ParcelasCatastrales/MapServer?f=pjson",
+      "params": [
+        {
+          "key": "f",
+          "value": "pjson",
+          "enabled": true
+        }
+      ],
+      "headers": [
+        {
+          "key": "Accept",
+          "value": "application/json",
+          "enabled": false
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/json",
+          "enabled": false
+        }
+      ],
+      "body": {
+        "type": "none"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "inheritAuth": true
+    },
+    "records": [],
+    "responseContracts": []
+  }
+]
