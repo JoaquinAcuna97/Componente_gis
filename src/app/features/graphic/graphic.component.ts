@@ -521,7 +521,6 @@ export class GraphicComponent implements OnInit, OnDestroy {
     // existing delete handling
   }
 
-  // New method to handle FIND_PADRON request
   private handleFindPadron(params: string[]): void {
     // Parse input strings like "L-2514"
     const map: Record<string, string[]> = {};
@@ -536,16 +535,43 @@ export class GraphicComponent implements OnInit, OnDestroy {
         map[dept].push(pad);
       }
     });
+    // Build list of requested full padron IDs
+    const requestedPadrones: string[] = [];
+    Object.entries(map).forEach(([dept, pads]) => {
+      pads.forEach(p => requestedPadrones.push(`${dept}-${p}`));
+    });
     // Call service to fetch geometries
     this.padronService.fetchPadronGeometries(map).subscribe(featureCollection => {
       if (featureCollection) {
         // Add graphics to map
         this.addGraphicsPoligon(featureCollection);
+        console.log('FeatureCollection sample:', featureCollection.features?.[0]);
+        // Determine which padrones have geometry and collect their pad numbers
+        const returnedPadNumbers = new Set(
+          (featureCollection.features || [])
+            .filter((f: any) => !!f.geometry && Object.keys(f.geometry).length > 0)
+            .map((f: any) => {
+              const props = f.properties ?? f.attributes;
+
+              const codDepto = props?.CODDEPTO ?? props?.coddepto;
+              const padron = props?.PADRON ?? props?.padron;
+
+              return codDepto && padron ? `${codDepto}-${padron}` : null;
+            })
+            .filter(Boolean)
+        );
+        // Build notFound list based on missing pad numbers per department
+        const notFound = requestedPadrones.filter(
+          pad => !returnedPadNumbers.has(pad)
+        );
         // Notify parent with results
         this.messageService.sendMessageToParent('PADRON_FOUND', { results: featureCollection.features });
+        this.messageService.sendMessageToParent('PADRON_NOT_FOUND', { results: notFound });
       }
     }, error => {
       console.error('Error fetching padron geometries', error);
+      // If request fails, treat all requested padrones as not found
+      this.messageService.sendMessageToParent('PADRON_NOT_FOUND', { results: requestedPadrones });
     });
   }
 

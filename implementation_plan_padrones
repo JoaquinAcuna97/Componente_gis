@@ -1,6 +1,7 @@
 # FIND_PADRON Implementation Plan
 
 ## Goal Description
+
 Implement the `FIND_PAD` (documented as `FIND_PADRON` in README) functionality in the GIS component. The method receives a list of strings formatted as `CODDEPTO-PADRON`, parses them into a department‑code → padron map, queries the ArcGIS service for geometry, adds a new configurable layer to display the results, and provides a UI in `test/index.html` to trigger the search and show results in a table.
 
 ## User Review Response
@@ -11,9 +12,13 @@ Implement the `FIND_PAD` (documented as `FIND_PADRON` in README) functionality i
 > 4. **Table UI Layout** the results table just a simple HTML table
 
 ## Proposed Changes
+
 ---
+
 ### Graphic Component
+
 #### [MODIFY] [graphic.component.ts](file:///c:/Users/wacuna/Documents/AngularComponent/Componente_gis/src/app/features/graphic/graphic.component.ts)
+
 - Add a new case `FIND_PADRON` in the message subscription handling.
 - Implement `handleFindPadron(params: string[])` that:
   1. Parses each string into `{ dept: string, padron: string }`.
@@ -24,8 +29,11 @@ Implement the `FIND_PAD` (documented as `FIND_PADRON` in README) functionality i
 - Emit a response message to the parent if needed (e.g., `PADRON_FOUND`).
 
 ---
+
 ### Padron Service
+
 #### [NEW] [padron.service.ts](file:///c:/Users/wacuna/Documents/AngularComponent/Componente_gis/src/app/services/padron.service.ts)
+
 - Injectable Angular service.
 - Method `fetchPadronGeometries(map: Record<string, string[]>): Observable<FeatureCollection>`.
 - Builds query URLs combined query using the ArcGIS REST endpoint.
@@ -33,9 +41,13 @@ Implement the `FIND_PAD` (documented as `FIND_PADRON` in README) functionality i
 - Handles pagination (`resultOffset`, `resultRecordCount`) if needed.
 
 ---
+
 ### Layer Configuration
+
 #### [MODIFY] [layer.config.ts](file:///c:/Users/wacuna/Documents/AngularComponent/Componente_gis/src/app/core/config/layer.config.ts)
+
 - Add a new entry to `environment.urls_layers`
+
 ```ts
 {   url: 'https://mapastest.mgap.gub.uy/arcgis/rest/services/SNIA_Temas/ParcelasCatastrales/MapServer/0',
     description: 'Padrones Catastrales',
@@ -46,38 +58,49 @@ Implement the `FIND_PAD` (documented as `FIND_PADRON` in README) functionality i
     style: { fillColor: [0,255,0,0.5], outlineColor: [0,0,0,1], width: 2 }
 }
 ```
+
 - Ensure `LayerService` can create a new `GraphicsLayer` from this config when `addGraphics` is called.
 
 ---
+
 ### Test UI (index.html)
+
 #### [MODIFY] [test/index.html](file:///c:/Users/wacuna/Documents/AngularComponent/Componente_gis/test/index.html)
+
 - Add a text input for the padron list (comma‑separated) and a **Buscar** button.
 - On click, send a `FIND_PADRON` postMessage to the iframe with `params` being the array of strings.
-- Below the iframe, insert an empty `<table id="padronResults"></table>`.
-- In the script, listen for a new message type `PADRON_FOUND` that returns an array of objects `{ dept, padron, geometry }` and populate the table.
 
 ---
+
 ### Styling (Optional)
+
 #### [NEW] [padron.layer.style.ts] (optional)
+
 - Export a constant with default symbology for padron graphics (simple fill + outline).
 - Import this style in `layer.service.ts` when creating the padron layer.
 
 ---
+
 ### Message Types
+
 #### [MODIFY] [message.service.ts] (if needed)
+
 - Document the new outbound message `PADRON_FOUND`.
 
 ---
+
 ## Verification Plan
+
 ### Automated Tests
+
 - Unit test for `PadronService` that verifies URL construction and parsing of a mock ArcGIS response.
 - Jest/Karma test for `GraphicComponent.handleFindPadron` ensuring graphics are added to the layer.
 
 ### Manual Verification
+
 1. Run `ng serve`.
 2. Open `test/index.html`.
 3. Enter example list `L-2514, L-34, M-1212` and click **Buscar**.
 4. Verify that a new layer appears on the map with the geometries.
 5. Confirm the table below the iframe shows the department, padron, and a link to view geometry details.
 6. Toggle layer visibility via the layer list (should respect the `visible` flag).
-

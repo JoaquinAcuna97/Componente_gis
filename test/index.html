@@ -67,15 +67,12 @@
       receiver.postMessage({ message: 'FIND_PADRON', params: params }, '*');
     }
     addEventListener('message', (e) => {
-      if (e.data.message === 'PADRON_FOUND') {
-        var tbody = document.querySelector('#padronResults tbody');
-        tbody.innerHTML = '';
-        e.data.params.results.forEach(f => {
-          var dept = f.attributes ? f.attributes.departamento || f.attributes.CODDEPTO : '';
-          var pad = f.attributes ? f.attributes.padron || f.attributes.PADRON : '';
-          var row = `<tr><td>${dept}</td><td>${pad}</td></tr>`;
-          tbody.insertAdjacentHTML('beforeend', row);
-        });
+      console.log('Message received from child:', e);
+      if (e.data && e.data.message === 'PADRON_FOUND') {
+        console.log('PADRON_FOUND data:', e.data);
+      }
+      if (e.data && e.data.message === 'PADRON_NOT_FOUND') {
+        console.log('PADRON_NOT_FOUND data:', e.data);
       }
     });
 
