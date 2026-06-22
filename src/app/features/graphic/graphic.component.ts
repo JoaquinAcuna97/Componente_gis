@@ -36,6 +36,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
   map: Map;
   view: MapView;
   graphicLayer: GraphicsLayer;
+  padronLayer: GraphicsLayer; // Layer for persistent Padron polygons
   sketch: Sketch;
   @Input() mapSubject!: BehaviorSubject<Map | null>;
   @Input() viewSubject!: BehaviorSubject<MapView | null>;
@@ -73,6 +74,8 @@ export class GraphicComponent implements OnInit, OnDestroy {
         width: PADRON_CONFIG.polygonSymbol.outlineWidth
       }
     });
+    // Initialize dedicated layer for Padron polygons
+    this.padronLayer = new GraphicsLayer({ listMode: "hide" });
     this.originalSymbol = MAP_CONFIG.defaultPointSymbol;
     this.optionToSelectMultiplePoints = this.appConfig.multiplePointSelection;
   }
@@ -200,7 +203,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
   zoomToAllFeatures() {
     if (this.view && this.graphicLayer) {
       this.view.when(() => {
-        this.all_graphics = this.graphicLayer.graphics.toArray();
+        this.all_graphics = [...this.graphicLayer.graphics.toArray(), ...this.padronLayer.graphics.toArray()];
         if (this.all_graphics.length > 0) {
           let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity;
 
@@ -306,8 +309,9 @@ export class GraphicComponent implements OnInit, OnDestroy {
             symbol = this.polygonSymbol;
           }
           const graphic = createGraphicFromGeoJSON(f, symbol);
-          this.graphicLayer.add(graphic);
-          // Track graphic for future operations
+          // Add polygon graphic to dedicated Padron layer
+          this.padronLayer.add(graphic);
+          // Track graphic for future operations (zoom, selection, etc.)
           this.all_graphics.push(graphic);
         } else {
           console.warn('Skipping feature due to missing geometry or id', f);
@@ -319,8 +323,13 @@ export class GraphicComponent implements OnInit, OnDestroy {
   }
   setupGraphicsLayer() {
     this.graphicLayer = this.layerService.getGraphicLayer();
+    // Ensure base graphics layer is added only once
     if (!this.map.layers.find(l => l === this.graphicLayer)) {
       this.map.add(this.graphicLayer);
+    }
+    // Add Padron layer if not already present
+    if (!this.map.layers.find(l => l === this.padronLayer)) {
+      this.map.add(this.padronLayer);
     }
   }
 
