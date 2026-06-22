@@ -675,6 +675,16 @@ export function createGraphicFromGeoJSON(this: any, feature: any, symbol: Simple
         spatialReference: { wkid: 4326 }
       });
       break;
+    case 'MultiPolygon': {
+      // GeoJSON MultiPolygon: coordinates is an array of polygons (each polygon is an array of linear rings)
+      // Flatten all rings into a single array for Esri Polygon constructor
+      const rings = feature.geometry.coordinates.reduce((acc: any[], poly: any[]) => acc.concat(poly), []);
+      geometry = new Polygon({
+        rings,
+        spatialReference: { wkid: 4326 }
+      });
+      break;
+    }
     default:
       throw new Error(`Unsupported geometry type: ${feature.geometry.type}`);
   }
