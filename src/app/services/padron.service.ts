@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { tap } from 'rxjs';
 import { Observable } from 'rxjs';
+import { PADRON_CONFIG } from '../core/config/padron.config';
 
 /**
  * Service to fetch geometries for padrones (cadastral parcels) from the MGAP ArcGIS service.
@@ -13,7 +14,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class PadronService {
-  private readonly baseUrl = 'https://mapastest.mgap.gub.uy/arcgis/rest/services/SNIA_Temas/ParcelasCatastrales/MapServer/0/query';
+  private readonly baseUrl = PADRON_CONFIG.baseUrl;
 
   constructor(private http: HttpClient) { }
 

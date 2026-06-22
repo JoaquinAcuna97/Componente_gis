@@ -21,6 +21,7 @@ import { PadronService } from '../../services/padron.service';
 import { APP_CONFIG_TOKEN, AppConfig } from '../../core/config/app.config';
 import { MAP_CONFIG } from '../../core/config/map.config';
 import { LAYER_CONFIGS } from '../../core/config/layer.config';
+import { PADRON_CONFIG } from '../../core/config/padron.config';
 
 @Component({
   selector: 'app-graphic',
@@ -64,10 +65,13 @@ export class GraphicComponent implements OnInit, OnDestroy {
     // simbología para puntos
     // Definir el símbolo de agrandamiento
     this.largeSymbol = MAP_CONFIG.hoverPointSymbol;
-    // Initialize polygon symbol (fallback if not provided in config)
-    this.polygonSymbol = (MAP_CONFIG as any).defaultPolygonSymbol || new SimpleFillSymbol({
-      color: [227, 139, 79, 0.4], // semi-transparent fill
-      outline: { color: [227, 139, 79, 1], width: 2 }
+    // Initialize polygon symbol from PADRON_CONFIG
+    this.polygonSymbol = new SimpleFillSymbol({
+      color: PADRON_CONFIG.polygonSymbol.fillColor,
+      outline: {
+        color: PADRON_CONFIG.polygonSymbol.outlineColor,
+        width: PADRON_CONFIG.polygonSymbol.outlineWidth
+      }
     });
     this.originalSymbol = MAP_CONFIG.defaultPointSymbol;
     this.optionToSelectMultiplePoints = this.appConfig.multiplePointSelection;
@@ -303,6 +307,8 @@ export class GraphicComponent implements OnInit, OnDestroy {
           }
           const graphic = createGraphicFromGeoJSON(f, symbol);
           this.graphicLayer.add(graphic);
+          // Track graphic for future operations
+          this.all_graphics.push(graphic);
         } else {
           console.warn('Skipping feature due to missing geometry or id', f);
         }
@@ -313,7 +319,9 @@ export class GraphicComponent implements OnInit, OnDestroy {
   }
   setupGraphicsLayer() {
     this.graphicLayer = this.layerService.getGraphicLayer();
-    this.map.add(this.graphicLayer);
+    if (!this.map.layers.find(l => l === this.graphicLayer)) {
+      this.map.add(this.graphicLayer);
+    }
   }
 
   setupSketch() {
