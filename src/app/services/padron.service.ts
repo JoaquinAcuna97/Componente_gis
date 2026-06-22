@@ -24,13 +24,13 @@ export class PadronService {
    */
   fetchPadronGeometries(deptPadMap: Record<string, string[]>): Observable<any> {
     const whereClauses: string[] = [];
-    for (const dept in deptPadMap) {
-      if (deptPadMap.hasOwnProperty(dept)) {
-        const pads = deptPadMap[dept].join(',');
-        // Padron numbers are numeric, but can be passed as strings without quotes.
-        whereClauses.push(`CODDEPTO='${dept}' AND PADRON IN (${pads})`);
-      }
-    }
+    Object.entries(deptPadMap).forEach(([dept, padrones]) => {
+      const pads = padrones.join(',');
+
+      whereClauses.push(
+        `CODDEPTO='${dept}' AND PADRON IN (${pads})`
+      );
+    });
     const where = whereClauses.join(' OR ');
     const params = new URLSearchParams({
       f: 'geojson',

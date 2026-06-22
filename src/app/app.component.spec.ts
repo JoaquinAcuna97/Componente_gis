@@ -4,7 +4,7 @@ import { APP_CONFIG_TOKEN } from './core/config/app.config';
 import { MessageService } from './features/message.service';
 import { LayerService } from './services/layer.service';
 import { Subject } from 'rxjs';
-import { ChangeDetectorRef } from '@angular/core';
+
 
 describe('AppComponent', () => {
   let component: AppComponent;

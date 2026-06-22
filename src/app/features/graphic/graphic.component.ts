@@ -14,7 +14,6 @@ import Polyline from '@arcgis/core/geometry/Polyline';
 import Polygon from '@arcgis/core/geometry/Polygon';
 import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import { BehaviorSubject, Subscription } from 'rxjs';
-import Extent from '@arcgis/core/geometry/Extent';
 import { v4 as uuid } from 'uuid';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { LayerService } from '../../services/layer.service';
@@ -49,10 +48,10 @@ export class GraphicComponent implements OnInit, OnDestroy {
   private largeSymbol: SimpleMarkerSymbol; // for point zoom
   private polygonSymbol: SimpleFillSymbol; // for polygon rendering
   private originalSymbol: SimpleMarkerSymbol;
-  private isPointFinished: boolean = true;
+  private isPointFinished = true;
   private optionToSelectMultiplePoints: boolean;
   private graphicInProcess: Graphic | null;
-  private onlyCreate: boolean = true;
+  private onlyCreate = true;
 
 
   constructor(
@@ -281,7 +280,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
       featureCollection.features.forEach((f: any) => {
         if (f.properties.id != null && f.properties.id != "") {
           // Crear un gráfico a partir de cada feature
-          let graphic = createGraphicFromGeoJSON(f, this.originalSymbol);
+          const graphic = createGraphicFromGeoJSON(f, this.originalSymbol);
           // Agregar el gráfico a la capa
           this.graphicLayer.add(graphic);
         }
@@ -581,8 +580,8 @@ export class GraphicComponent implements OnInit, OnDestroy {
   private queryToIntersect(url: string, graphic: Graphic, field: string): Promise<string[]> {
     return new Promise((resolve, reject) => {
       // Consultar las entidades cercanas al punto
-      var featureLayer = new FeatureLayer({ url: url })
-      var query = featureLayer.createQuery();
+      const featureLayer = new FeatureLayer({ url: url })
+      const query = featureLayer.createQuery();
       query.geometry = graphic.geometry; // Buffer de 1000 metros alrededor del punto
       //query.geometry = geometryEngine.buffer(point, 1000); // Buffer de 1000 metros alrededor del punto
       query.spatialRelationship = "intersects"; // Relación espacial
@@ -591,8 +590,8 @@ export class GraphicComponent implements OnInit, OnDestroy {
 
       featureLayer.queryFeatures(query).then(function (response) {
         // Procesar los resultados de la consulta
-        var features = response.features;
-        var deptos = features.map(function (feature) {
+        const features = response.features;
+        const deptos = features.map(function (feature) {
           return feature.attributes[field]; // Obtener el valor del campo "DEPTO"
         });
 
@@ -612,7 +611,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
 export function graphicCollectionToGeoJSON(graphics: Graphic[]) {
   if (graphics.length > 0) {
     console.log(graphics.length);
-    let features: {}[] = [];
+    const features: object[] = [];
     const graphicCollection = {
       type: "FeatureCollection",
       features: features
