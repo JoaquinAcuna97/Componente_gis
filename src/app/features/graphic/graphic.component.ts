@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, OnInit, Inject } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import Map from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
@@ -14,13 +14,14 @@ import Polyline from '@arcgis/core/geometry/Polyline';
 import Polygon from '@arcgis/core/geometry/Polygon';
 import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import { BehaviorSubject, Subscription } from 'rxjs';
-import Extent from '@arcgis/core/geometry/Extent';
+
 import { v4 as uuid } from 'uuid';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { LayerService } from '../../services/layer.service';
 import { PadronService } from '../../services/padron.service';
 import { APP_CONFIG_TOKEN, AppConfig } from '../../core/config/app.config';
-import { MAP_CONFIG } from '../../core/config/map.config';
+import type * as __esri from '@arcgis/core';
+import { FeatureCollection, Feature } from 'geojson';
 import { LAYER_CONFIGS } from '../../core/config/layer.config';
 
 @Component({
@@ -49,30 +50,20 @@ export class GraphicComponent implements OnInit, OnDestroy {
   private largeSymbol: SimpleMarkerSymbol; // for point zoom
   private polygonSymbol: SimpleFillSymbol; // for polygon rendering
   private originalSymbol: SimpleMarkerSymbol;
-  private isPointFinished: boolean = true;
+  private isPointFinished = true;
   private optionToSelectMultiplePoints: boolean;
   private graphicInProcess: Graphic | null;
-  private onlyCreate: boolean = true;
+  private onlyCreate = true;
 
 
-  constructor(
-    private messageService: MessageService,
-    private padronService: PadronService,
-    private layerService: LayerService,
-    @Inject(APP_CONFIG_TOKEN) private appConfig: AppConfig
-  ) {
-    this.loadLayersToIntersect();
-    // simbología para puntos
-    // Definir el símbolo de agrandamiento
-    this.largeSymbol = MAP_CONFIG.hoverPointSymbol;
-    // Initialize polygon symbol (fallback if not provided in config)
-    this.polygonSymbol = (MAP_CONFIG as any).defaultPolygonSymbol || new SimpleFillSymbol({
-      color: [227, 139, 79, 0.4], // semi-transparent fill
-      outline: { color: [227, 139, 79, 1], width: 2 }
-    });
-    this.originalSymbol = MAP_CONFIG.defaultPointSymbol;
-    this.optionToSelectMultiplePoints = this.appConfig.multiplePointSelection;
-  }
+  // Services are injected via Angular's `inject()` function.
+  private readonly messageService = inject(MessageService);
+  private readonly padronService = inject(PadronService);
+  private readonly layerService = inject(LayerService);
+  private readonly appConfig = inject<AppConfig>(APP_CONFIG_TOKEN);
+
+  // Symbol initialization moved to ngOnInit after services are available.
+
 
   private enableSketchAfterPointCreated() {
     if (this.isPointFinished) {
@@ -247,15 +238,15 @@ export class GraphicComponent implements OnInit, OnDestroy {
   setupHoverEffect() {
     let highlightedGraphic: Graphic | null = null;
 
-    this.view.on("pointer-move", (event: any) => {
-      this.view.hitTest(event).then((response: any) => {
+    this.view.on("pointer-move", (event: __esri.ViewPointerMoveEvent) => {
+      this.view.hitTest(event).then((response: __esri.HitTestResult) => {
         if (highlightedGraphic) {
           highlightedGraphic.symbol = this.originalSymbol;
           highlightedGraphic = null;
         }
 
         if (response.results.length) {
-          const graphic = response.results.find((result: any) => {
+          const graphic = response.results.find((result: __esri.HitTestResult) => {
             return result.graphic && result.graphic.layer === this.graphicLayer;
           })?.graphic;
 
@@ -275,30 +266,30 @@ export class GraphicComponent implements OnInit, OnDestroy {
     });
   }
 
-  addGraphics(featureCollection: any) {
+  addGraphics(featureCollection: FeatureCollection) {
     console.log(featureCollection);
     if (featureCollection && featureCollection.features) {
-      featureCollection.features.forEach((f: any) => {
-        if (f.properties.id != null && f.properties.id != "") {
+      featureCollection.features.forEach((f) => {
+        if (f.properties?.id != null && f.properties?.id != "") {
           // Crear un gráfico a partir de cada feature
-          let graphic = createGraphicFromGeoJSON(f, this.originalSymbol);
+          const graphic = createGraphicFromGeoJSON(f, this.originalSymbol);
           // Agregar el gráfico a la capa
           this.graphicLayer.add(graphic);
         }
       });
     }
   }
-  addGraphicsPoligon(featureCollection: any) {
+  addGraphicsPoligon(featureCollection: FeatureCollection) {
     console.log(featureCollection);
     if (featureCollection && Array.isArray(featureCollection.features)) {
-      featureCollection.features.forEach((f: any) => {
+      featureCollection.features.forEach((f) => {
         const props = f.properties || {};
         const id = props.id ?? f.attributes?.PADRON ?? f.attributes?.CODDEPTO;
         if (f.geometry && f.geometry.type) {
           // Ensure the feature has an id property for later selection
           f.properties = { ...(f.properties || {}), id };
           // Choose appropriate symbol based on geometry type
-          let symbol: any = this.originalSymbol;
+          let symbol = this.originalSymbol;
           if (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon') {
             symbol = this.polygonSymbol;
           }
@@ -507,7 +498,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
 
   // New method to handle FIND_PADRON request
   private handleFindPadron(params: string[]): void {
-    // Parse input strings like "L-2514"
+    // Parse input strings like "L-2614"
     const map: Record<string, string[]> = {};
     params.forEach(p => {
       const parts = p.split('-');
@@ -581,8 +572,8 @@ export class GraphicComponent implements OnInit, OnDestroy {
   private queryToIntersect(url: string, graphic: Graphic, field: string): Promise<string[]> {
     return new Promise((resolve, reject) => {
       // Consultar las entidades cercanas al punto
-      var featureLayer = new FeatureLayer({ url: url })
-      var query = featureLayer.createQuery();
+      const featureLayer = new FeatureLayer({ url: url })
+      const query = featureLayer.createQuery();
       query.geometry = graphic.geometry; // Buffer de 1000 metros alrededor del punto
       //query.geometry = geometryEngine.buffer(point, 1000); // Buffer de 1000 metros alrededor del punto
       query.spatialRelationship = "intersects"; // Relación espacial
@@ -591,8 +582,8 @@ export class GraphicComponent implements OnInit, OnDestroy {
 
       featureLayer.queryFeatures(query).then(function (response) {
         // Procesar los resultados de la consulta
-        var features = response.features;
-        var deptos = features.map(function (feature) {
+        const features = response.features;
+        const deptos = features.map(function (feature) {
           return feature.attributes[field]; // Obtener el valor del campo "DEPTO"
         });
 
@@ -612,7 +603,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
 export function graphicCollectionToGeoJSON(graphics: Graphic[]) {
   if (graphics.length > 0) {
     console.log(graphics.length);
-    let features: {}[] = [];
+    const features: Record<string, unknown>[] = [];
     const graphicCollection = {
       type: "FeatureCollection",
       features: features
@@ -637,7 +628,7 @@ export function graphicToGeoJSON(graphic: Graphic) {
   };
 }
 
-export function createGraphicFromGeoJSON(this: any, feature: any, symbol: SimpleMarkerSymbol) {
+export function createGraphicFromGeoJSON(feature: Feature, symbol: __esri.Symbol): Graphic {
   let geometry;
 
   switch (feature.geometry.type) {

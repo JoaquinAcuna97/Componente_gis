@@ -1,10 +1,10 @@
-import { Injectable } from '@angular/core';
+import { FeatureCollection } from 'geojson';
 import { HttpClient } from '@angular/common/http';
 import { tap } from 'rxjs';
 import { Observable } from 'rxjs';
 
 /**
- * Service to fetch geometries for padrones (cadastral parcels) from the MGAP ArcGIS service.
+ * Service to fetch geometries for padrones (cadastral parcelas) from the MGAP ArcGIS service.
  * The method receives a map where the key is the department code (e.g., "L") and the value
  * is an array of padron numbers (as strings). It constructs a single combined query using an
  * `IN` clause per department, as specified in the implementation plan.
@@ -14,18 +14,17 @@ import { Observable } from 'rxjs';
 })
 export class PadronService {
   private readonly baseUrl = 'https://mapastest.mgap.gub.uy/arcgis/rest/services/SNIA_Temas/ParcelasCatastrales/MapServer/0/query';
-
-  constructor(private http: HttpClient) { }
+  private readonly http = inject(HttpClient);
 
   /**
    * Build and execute a query to fetch padron geometries.
    * @param deptPadMap Map of department code to array of padron numbers.
    * @returns Observable emitting the FeatureCollection compatible with `addGraphics`.
    */
-  fetchPadronGeometries(deptPadMap: Record<string, string[]>): Observable<any> {
+  fetchPadronGeometries(deptPadMap: Record<string, string[]>): Observable<FeatureCollection> {
     const whereClauses: string[] = [];
     for (const dept in deptPadMap) {
-      if (deptPadMap.hasOwnProperty(dept)) {
+      if (Object.prototype.hasOwnProperty.call(deptPadMap, dept)) {
         const pads = deptPadMap[dept].join(',');
         // Padron numbers are numeric, but can be passed as strings without quotes.
         whereClauses.push(`CODDEPTO='${dept}' AND PADRON IN (${pads})`);
@@ -40,7 +39,7 @@ export class PadronService {
       resultRecordCount: '10' // keep limit as per user request
     });
     const url = `${this.baseUrl}?${params.toString()}`;
-    return this.http.get<any>(url).pipe(
+    return this.http.get<FeatureCollection>(url).pipe(
       tap(res => console.log(res, 'padrones response'))
     );
   }

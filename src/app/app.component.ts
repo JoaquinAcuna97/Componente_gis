@@ -1,21 +1,10 @@
-import {
-  Component,
-  OnInit,
-  ViewChild,
-  ElementRef,
-  OnDestroy,
-  ChangeDetectorRef,
-  Inject,
-} from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
+import type * as __esri from '@arcgis/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
-import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
-import WebMap from '@arcgis/core/WebMap';
 import Map from '@arcgis/core/Map';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import MapView from '@arcgis/core/views/MapView';
-import Bookmarks from '@arcgis/core/widgets/Bookmarks';
-import Expand from '@arcgis/core/widgets/Expand';
+import Extent from '@arcgis/core/geometry/Extent';
 import { GraphicComponent } from './features/graphic/graphic.component';
 import { MessageService } from './features/message.service';
 import esriConfig from '@arcgis/core/config';
@@ -23,8 +12,7 @@ import Portal from '@arcgis/core/portal/Portal';
 import { BehaviorSubject } from 'rxjs';
 import { LayerService } from './services/layer.service';
 import { LayerComponent } from './features/layer/layer.component';
-import { APP_CONFIG_TOKEN, AppConfig } from './core/config/app.config';
-import Extent from '@arcgis/core/geometry/Extent';
+import { APP_CONFIG_TOKEN } from './core/config/app.config';
 
 @Component({
   selector: 'app-root',
@@ -34,7 +22,7 @@ import Extent from '@arcgis/core/geometry/Extent';
   styleUrls: ['./app.component.css']
 })
 
-export class AppComponent implements OnInit, OnDestroy {  
+export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   map: Map;
   view: MapView;
   extent: Extent;
@@ -42,30 +30,28 @@ export class AppComponent implements OnInit, OnDestroy {
   viewSubject = new BehaviorSubject<MapView | null>(null);
   cargoMapa = false;
 
-  constructor(
-    private layerService: LayerService,
-    private messageService: MessageService,
-    private cdr: ChangeDetectorRef,
-    @Inject(APP_CONFIG_TOKEN) private appConfig: AppConfig
-  ) {}
+  private layerService = inject(LayerService);
+  private messageService = inject(MessageService);
+  private cdr = inject(ChangeDetectorRef);
+  private appConfig = inject(APP_CONFIG_TOKEN);
 
   // The <div> where we will place the map
   @ViewChild('mapViewNode', { static: true }) private mapViewEl!: ElementRef;
 
-  initializeMap(): Promise<any> {
+  initializeMap(): Promise<void> {
     // Initialize MapView and return an instance of MapView
     const container = this.mapViewEl.nativeElement;
 
 
-    this.map = new Map( {
+    this.map = new Map({
       basemap: {
         portalItem: {
           id: this.appConfig.idBaseMap //Streets (WGS84)
-        },        
+        },
       }
-    });    
+    });
     this.cargoMapa = true;
-    
+
     this.view = new MapView({
       container: container,
       map: this.map,
@@ -73,20 +59,20 @@ export class AppComponent implements OnInit, OnDestroy {
         wkid: 4326
       }
     });
-    
+
     return this.view.when().then(() => {
       this.mapSubject.next(this.map);
-      this.viewSubject.next(this.view);      
-      setTimeout(() =>{
+      this.viewSubject.next(this.view);
+      setTimeout(() => {
         this.centerMapView();
       })
     });
   }
 
 
-  private centerMapView(): void{
+  private centerMapView(): void {
     this.view.goTo({
-      center : [-55.7658, -32.5228],
+      center: [-55.7658, -32.5228],
       scale: 4000000
     });
 
@@ -94,43 +80,41 @@ export class AppComponent implements OnInit, OnDestroy {
       xmin: -59,
       ymin: -35,
       xmax: -53,
-      ymax: -30,    
+      ymax: -30,
       spatialReference: { wkid: 4326 }
     });
     console.log(this.extent);
     this.view.constraints = {
       minScale: 5000000,
-      maxScale: 1000, 
+      maxScale: 1000,
       geometry: this.extent,
-      rotationEnabled: false 
-      };
-    
+      rotationEnabled: false
+    };
+
   }
   ngOnInit(): void {
     this.setupLayerSubscription();
     this.messageService.listenMessageFromParent();
     esriConfig.portalUrl = this.appConfig.urlPortal;
 
-    let portalInstance = new Portal();
+    const portalInstance = new Portal();
     portalInstance
-        .load()
-        .then(() => {
-          console.log('Portal loaded');
-        }      
+      .load()
+      .then(() => {
+        console.log('Portal loaded');
+      }
       )
   }
   private setupLayerSubscription(): void {
-    this.layerService.layerObservable$.subscribe(layer => {
-      
+    this.layerService.layerObservable$.subscribe((layer: __esri.Layer) => {
       if (this.map) {
         this.map.add(layer);
-      
       }
     });
   }
   ngAfterViewInit(): void {
     setTimeout(() => {
-      this.initializeMap().then(() => {        
+      this.initializeMap().then(() => {
         this.messageService.sendMessageToParent('INITIALIZE_COMPLETE', {});
         this.cdr.detectChanges();
       }).catch((err) => {
