@@ -81,6 +81,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
   }
 
   private enableSketchAfterPointCreated() {
+    if (!this.sketch || this.sketch.destroyed) return;
     if (this.isPointFinished) {
       this.isPointFinished = false;
       this.changeStateMultipleSelectionSketch(false);
@@ -96,6 +97,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
   }
 
   private changeStateMultipleSelectionSketch(value: boolean): void {
+    if (!this.sketch || this.sketch.destroyed) return;
     this.sketch.visibleElements = {
       selectionTools: {
         "rectangle-selection": value, // Deshabilitar Seleccionar por rectángulo
@@ -176,12 +178,15 @@ export class GraphicComponent implements OnInit, OnDestroy {
 
   private startViewMode(): void {
     if (this.sketch) {
-      this.sketch.cancel();
-      //this.enablePointCreation(false);
-      //this.sketch.visible = false;
-      this.sketch.destroy();
+      try {
+        this.sketch.cancel();
+        this.sketch.destroy();
+      } catch (e) {
+        console.error('Error destroying sketch:', e);
+      }
+    }
+    if (this.bkExpand_Sketch) {
       this.bkExpand_Sketch.visible = false;
-
     }
   }
 
@@ -296,6 +301,9 @@ export class GraphicComponent implements OnInit, OnDestroy {
   }
   addGraphicsPoligon(featureCollection: any) {
     console.log(featureCollection);
+    const padronGraphicsSet = new Set(this.padronLayer.graphics.toArray());
+    this.padronLayer.removeAll();
+    this.all_graphics = this.all_graphics.filter(g => !padronGraphicsSet.has(g));
     if (featureCollection && Array.isArray(featureCollection.features)) {
       featureCollection.features.forEach((f: any) => {
         const props = f.properties || {};
@@ -353,7 +361,16 @@ export class GraphicComponent implements OnInit, OnDestroy {
     this.sketchCreate();
     this.sketchUpdate();
     this.sketchDelete();
-    this.activateCreatePointMode();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const modo = urlParams.get('modo') || 'vista';
+
+    if (modo === 'edicion') {
+      this.activateCreatePointMode();
+    } else {
+      this.startViewMode();
+    }
+
     this.bkExpand_Sketch = new Expand({
       view: this.view,
       content: this.sketch,
@@ -361,6 +378,9 @@ export class GraphicComponent implements OnInit, OnDestroy {
     });
 
     this.view.ui.add(this.bkExpand_Sketch, 'top-right');
+    if (modo !== 'edicion') {
+      this.bkExpand_Sketch.visible = false;
+    }
   }
 
   setupLayerList() {
@@ -377,10 +397,12 @@ export class GraphicComponent implements OnInit, OnDestroy {
   }
 
   private enablePointCreation(value: boolean) {
+    if (!this.sketch || this.sketch.destroyed) return;
     this.sketch.visibleElements.createTools = { point: value };
   }
 
   private selectAndEditCreatedPoint(graphic: Graphic | null, finishSetting: boolean): void {
+    if (!this.sketch || this.sketch.destroyed) return;
     if (!finishSetting) {
       if (graphic != null) {
         this.graphicInProcess = graphic;
@@ -391,6 +413,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
   }
   //Métodos de configuración del Sketch
   private sketchCreate() {
+    if (!this.sketch || this.sketch.destroyed) return;
     this.sketch.on('create', async (event) => {
       if (event.state === 'complete') {
         const graphic = event.graphic;
@@ -426,8 +449,11 @@ export class GraphicComponent implements OnInit, OnDestroy {
   }
 
   private sketchUpdate() {
+    if (!this.sketch || this.sketch.destroyed) return;
     this.sketch.on("update", async (event) => {
-      if (this.onlyCreate) this.sketch.cancel();
+      if (this.onlyCreate) {
+        if (this.sketch && !this.sketch.destroyed) this.sketch.cancel();
+      }
       else if (this.graphicInProcess == null) {
         // Map para almacenar los ids originales asociados a sus gráficos
         if (event.state === 'start') {
@@ -518,6 +544,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
   }
 
   private sketchDelete() {
+    if (!this.sketch || this.sketch.destroyed) return;
     // existing delete handling
   }
 
@@ -576,9 +603,11 @@ export class GraphicComponent implements OnInit, OnDestroy {
   }
 
   private activateCreatePointMode() {
+    if (!this.sketch || this.sketch.destroyed) return;
     this.sketch.create('point');
   }
   private cancelCreatePointMode() {
+    if (!this.sketch || this.sketch.destroyed) return;
     this.sketch.cancel();
   }
   //Método para Padre

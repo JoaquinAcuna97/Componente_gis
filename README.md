@@ -269,6 +269,8 @@ El componente implementa un sistema de comunicación bidireccional con la aplica
 | `DELETE_FEATURE`      | `{ ids: string[] }`                                         | Notifica que se eliminaron features                 |
 | `FEATURE_SELECTED`    | `{ id: string }`                                            | Notifica que se seleccionó un feature               |
 | `FEATURES_SELECTED`   | `{ id: string[] }`                                          | Notifica que se seleccionaron múltiples features    |
+| `PADRON_FOUND`        | `{ results: GeoJSON_Feature[] }`                            | Notifica los padrones encontrados con geometría     |
+| `PADRON_NOT_FOUND`    | `{ results: string[] }`                                     | Notifica los padrones que no tienen geometría       |
 
 ### Ejemplo de Uso
 
