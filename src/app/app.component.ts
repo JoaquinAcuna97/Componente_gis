@@ -54,20 +54,14 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
 
     this.map = new Map({
-      basemap: {
-        portalItem: {
-          id: this.appConfig.idBaseMap //Streets (WGS84)
-        },
-      }
+      basemap: "hybrid"
     });
     this.cargoMapa = true;
 
     this.view = new MapView({
       container: container,
       map: this.map,
-      spatialReference: {
-        wkid: 4326
-      }
+
     });
 
     return this.view.when().then(() => {

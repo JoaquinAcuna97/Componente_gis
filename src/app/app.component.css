@@ -1,9 +1,8 @@
 @import url('https://js.arcgis.com/4.29/@arcgis/core/assets/esri/themes/light/main.css');
 
-
-#mapViewNode{
+#mapViewNode {
   padding: 0;
   margin: 0;
-  height: 600px;
-  width: 600px;  
+  height: 100%;
+  width: 100%;
 }

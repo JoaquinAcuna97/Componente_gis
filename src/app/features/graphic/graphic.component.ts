@@ -210,44 +210,18 @@ export class GraphicComponent implements OnInit, OnDestroy {
       this.view.when(() => {
         this.all_graphics = [...this.graphicLayer.graphics.toArray(), ...this.padronLayer.graphics.toArray()];
         if (this.all_graphics.length > 0) {
-          let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity;
-
-          this.all_graphics.forEach(graphic => {
-            const geometry = graphic.geometry;
-
-            if (geometry) {
-              if (geometry.type === "point") {
-                const point = geometry as Point;
-                xmin = Math.min(xmin, point.x);
-                ymin = Math.min(ymin, point.y);
-                xmax = Math.max(xmax, point.x);
-                ymax = Math.max(ymax, point.y);
-              } else if (geometry.extent) {
-                xmin = Math.min(xmin, geometry.extent.xmin);
-                ymin = Math.min(ymin, geometry.extent.ymin);
-                xmax = Math.max(xmax, geometry.extent.xmax);
-                ymax = Math.max(ymax, geometry.extent.ymax);
-              }
-            }
-          });
-
-          const centerX = (xmin + xmax) / 2;
-          const centerY = (ymin + ymax) / 2;
-          const extentWidth = xmax - xmin;
-          const extentHeight = ymax - ymin;
-
-          const viewWidthInMapUnits = this.view.width * this.view.resolution;
-          const viewHeightInMapUnits = this.view.height * this.view.resolution;
-
-          const scaleX = extentWidth / viewWidthInMapUnits;
-          const scaleY = extentHeight / viewHeightInMapUnits;
-
-          const scale = Math.max(scaleX, scaleY) * this.view.scale;
-
-          this.view.goTo({
-            center: [centerX, centerY],
-            scale: scale * 1.2
-          }, { duration: 1500 });
+          if (this.all_graphics.length === 1 && this.all_graphics[0].geometry.type === 'point') {
+            this.view.goTo({
+              target: this.all_graphics[0],
+              scale: 5000
+            }, { duration: 1500 }).catch(err => {
+              console.error("Error zooming to single point: ", err);
+            });
+          } else {
+            this.view.goTo(this.all_graphics, { duration: 1500 }).catch(err => {
+              console.error("Error zooming to all features: ", err);
+            });
+          }
         } else {
           console.warn('No hay gráficos en la capa para hacer zoom.');
         }
