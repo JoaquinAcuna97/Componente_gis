@@ -61,7 +61,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
   private optionToSelectMultiplePoints: boolean;
   private graphicInProcess: Graphic | null;
   private onlyCreate = true;
-  private padronBaseLayerLabelsVisible: boolean | undefined;
+  private originalPadronLabelingInfo: __esri.LabelClass[] | null = null;
   private padronLabelScaleWatch: IHandle | null = null;
 
 
@@ -89,33 +89,6 @@ export class GraphicComponent implements OnInit, OnDestroy {
     this.originalSymbol = MAP_CONFIG.defaultPointSymbol;
     this.optionToSelectMultiplePoints = this.appConfig.multiplePointSelection;
   }
-
-  private enableSketchAfterPointCreated() {
-    if (!this.sketch || this.sketch.destroyed) return;
-    if (this.isPointFinished) {
-      this.isPointFinished = false;
-      this.changeStateMultipleSelectionSketch(false);
-      this.enablePointCreation(false);
-    } else {
-      this.isPointFinished = true;
-      this.changeStateMultipleSelectionSketch(this.optionToSelectMultiplePoints);
-      this.enablePointCreation(true);
-    }
-    this.sketch.visibleElements.settingsMenu = false;
-    this.sketch.visibleElements.duplicateButton = false;
-    this.sketch.visibleElements.undoRedoMenu = false;
-  }
-
-  private changeStateMultipleSelectionSketch(value: boolean): void {
-    if (!this.sketch || this.sketch.destroyed) return;
-    this.sketch.visibleElements = {
-      selectionTools: {
-        "rectangle-selection": value, // Deshabilitar Seleccionar por rectángulo
-        "lasso-selection": value
-      }
-    };   // Deshabilitar Seleccionar por lazo
-  }
-
 
   ngOnInit() {
     const s1 = this.mapSubject.subscribe(map => {
@@ -178,6 +151,38 @@ export class GraphicComponent implements OnInit, OnDestroy {
 
     this.subscriptions.push(s1, s2, s3);
   }
+
+  ngOnDestroy(): void {
+    this.padronLabelScaleWatch?.remove();
+    this.subscriptions.forEach(s => s.unsubscribe());
+  }
+
+  private enableSketchAfterPointCreated() {
+    if (!this.sketch || this.sketch.destroyed) return;
+    if (this.isPointFinished) {
+      this.isPointFinished = false;
+      this.changeStateMultipleSelectionSketch(false);
+      this.enablePointCreation(false);
+    } else {
+      this.isPointFinished = true;
+      this.changeStateMultipleSelectionSketch(this.optionToSelectMultiplePoints);
+      this.enablePointCreation(true);
+    }
+    this.sketch.visibleElements.settingsMenu = false;
+    this.sketch.visibleElements.duplicateButton = false;
+    this.sketch.visibleElements.undoRedoMenu = false;
+  }
+
+  private changeStateMultipleSelectionSketch(value: boolean): void {
+    if (!this.sketch || this.sketch.destroyed) return;
+    this.sketch.visibleElements = {
+      selectionTools: {
+        "rectangle-selection": value, // Deshabilitar Seleccionar por rectángulo
+        "lasso-selection": value
+      }
+    };   // Deshabilitar Seleccionar por lazo
+  }
+
   private selectGraphicById(id: string): Graphic | null {
     if (this.all_graphics.length > 0) {
       const graphic = this.all_graphics.find((g) => g.attributes && g.attributes.id === id);
@@ -198,11 +203,6 @@ export class GraphicComponent implements OnInit, OnDestroy {
     if (this.bkExpand_Sketch) {
       this.bkExpand_Sketch.visible = false;
     }
-  }
-
-  ngOnDestroy(): void {
-    this.padronLabelScaleWatch?.remove();
-    this.subscriptions.forEach(s => s.unsubscribe());
   }
 
   zoomToFeature(id: string) {
@@ -297,6 +297,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
       });
     }
   }
+
   addGraphicsPoligon(featureCollection: any) {
     console.log(featureCollection);
     const padronGraphicsSet = new Set([
@@ -306,7 +307,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
     this.padronLayer.removeAll();
     this.padronLabelLayer.removeAll();
     this.all_graphics = this.all_graphics.filter(g => !padronGraphicsSet.has(g));
-    this.setPadronBaseLayerLabelsVisible(false);
+
     if (featureCollection && Array.isArray(featureCollection.features)) {
       featureCollection.features.forEach((f: any) => {
         const props = { ...(f.properties || {}), ...(f.attributes || {}) };
@@ -343,6 +344,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
       this.zoomToAllFeatures();
     }
   }
+
   private createPadronLabelGraphic(
     geometry: Graphic['geometry'],
     departamento: string | number | undefined,
@@ -375,7 +377,6 @@ export class GraphicComponent implements OnInit, OnDestroy {
       }),
     });
   }
-
   /** Returns a point guaranteed to fall inside the polygon for label placement. */
   private getPolygonLabelPoint(polygon: Polygon): Point | null {
     const extent = polygon.extent;
@@ -437,19 +438,6 @@ export class GraphicComponent implements OnInit, OnDestroy {
     }
 
     return undefined;
-  }
-
-  private setPadronBaseLayerLabelsVisible(visible: boolean): void {
-    const padronFeatureLayer = this.getPadronFeatureLayer();
-    if (!padronFeatureLayer) {
-      return;
-    }
-
-    if (this.padronBaseLayerLabelsVisible === undefined) {
-      this.padronBaseLayerLabelsVisible = padronFeatureLayer.labelsVisible;
-    }
-
-    padronFeatureLayer.labelsVisible = visible;
   }
 
   private setupPadronLabelVisibility(): void {
@@ -556,6 +544,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
       this.sketch.cancel();
     }
   }
+
   //Métodos de configuración del Sketch
   private sketchCreate() {
     if (!this.sketch || this.sketch.destroyed) return;
@@ -736,6 +725,14 @@ export class GraphicComponent implements OnInit, OnDestroy {
         const notFound = requestedPadrones.filter(
           pad => !returnedPadNumbers.has(pad)
         );
+        const foundPadrones = featureCollection.features
+          .map((f: any) => {
+            const props = f.properties ?? f.attributes;
+            return props?.PADRON;
+          })
+          .filter(Boolean);
+
+        this.hideBaseLabelsForPadrones(foundPadrones);
         // Notify parent with results
         this.messageService.sendMessageToParent('PADRON_FOUND', { results: featureCollection.features });
         this.messageService.sendMessageToParent('PADRON_NOT_FOUND', { results: notFound });
@@ -745,6 +742,43 @@ export class GraphicComponent implements OnInit, OnDestroy {
       // If request fails, treat all requested padrones as not found
       this.messageService.sendMessageToParent('PADRON_NOT_FOUND', { results: requestedPadrones });
     });
+  }
+
+  private hideBaseLabelsForPadrones(padrones: (string | number)[]): void {
+    const layer = this.getPadronFeatureLayer();
+
+    if (!layer || !layer.labelingInfo?.length) {
+      return;
+    }
+
+    // Guardar configuración original una sola vez
+    if (!this.originalPadronLabelingInfo) {
+      this.originalPadronLabelingInfo = layer.labelingInfo.map(labelClass =>
+        labelClass.clone()
+      );
+    }
+
+    const values = padrones
+      .map(p => `${String(p).replace(/'/g, "''")}`)
+      .join(',');
+
+    const originalClass = this.originalPadronLabelingInfo[0];
+    const labelClass = originalClass.clone();
+
+    const originalWhere =
+      originalClass.where && originalClass.where.trim().length > 0
+        ? `(${originalClass.where})`
+        : '1=1';
+
+    labelClass.where = `${originalWhere} AND PADRON NOT IN (${values})`;
+
+    layer.labelingInfo = [labelClass];
+    layer.labelsVisible = false;
+    layer.labelsVisible = true;
+    // fuerza refresco
+    layer.refresh?.();
+
+
   }
 
   private activateCreatePointMode() {

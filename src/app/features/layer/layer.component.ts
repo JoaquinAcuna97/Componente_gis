@@ -5,12 +5,12 @@ import WMSLayer from "@arcgis/core/layers/WMSLayer.js";
 import { LAYER_CONFIGS } from '../../core/config/layer.config';
 
 export interface Layer {
-              url: string,
-              description: string,
-              type: 'WMS' | 'Feature',
-              show: boolean,
-              visible: boolean
-              }
+  url: string,
+  description: string,
+  type: 'WMS' | 'Feature',
+  show: boolean,
+  visible: boolean
+}
 @Component({
   selector: 'app-layer',
   templateUrl: './layer.component.html',
@@ -34,29 +34,28 @@ export class LayerComponent implements OnInit {
   ngOnInit() {
     this.loadLayers();
   }
-  private loadLayers(){
-    if(this.urls_services.length > 0){
+  private loadLayers() {
+    if (this.urls_services.length > 0) {
       this.urls_services.forEach((l) => {
-        if(l.type === 'WMS' && l.show) this.loadWMSLayers(l.url, l.description, l.visible);
+        if (l.type === 'WMS' && l.show) this.loadWMSLayers(l.url, l.description, l.visible);
         else if (l.type === 'Feature' && l.show) this.loadFeatureLayers(l.url, l.description, l.visible);
       })
     }
   }
 
-  private loadWMSLayers(url: string, title: string, visible: boolean){    
+  private loadWMSLayers(url: string, title: string, visible: boolean) {
     const wms_layer = new WMSLayer({
-                                    url: url,
-                                    title: title,
-                                    visible: visible
-                                  });
+      url: url,
+      title: title,
+      visible: visible
+    });
     this.layerService.addLayer(wms_layer);
   }
   private loadFeatureLayers(url: string, title: string, visible: boolean) {
     const newLayer = new FeatureLayer({
       url: url,
       title: title,
-      visible: visible,
-      labelsVisible: !/padron|parcela/i.test(title),
+      visible: visible
     });
     this.layerService.addLayer(newLayer);
   }
