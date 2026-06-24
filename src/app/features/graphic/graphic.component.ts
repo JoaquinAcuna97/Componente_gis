@@ -54,6 +54,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
   private optionToSelectMultiplePoints: boolean;
   private graphicInProcess: Graphic | null;
   private onlyCreate = true;
+  private isViewMode = false;
 
 
   constructor(
@@ -144,8 +145,8 @@ export class GraphicComponent implements OnInit, OnDestroy {
         this.sketchUpdate();
         if (!this.bkExpand_Sketch.visible) this.bkExpand_Sketch.visible = true;
       } else if (data.message === 'ONLY_VIEW') {
-        //Solo visualziación | no hay vuelta atrás
-        this.startViewMode();
+        // Alterna entre modo vista y modo edición
+        this.toggleViewMode();
       } else if (data.message === 'UPDATE_FEATURE') { //Modificar un punto, sólo puede modificar el punto con el id pasado por parámetro
         console.log("PIDEN ACTUALIAR ESTE PUNTO: ", data.params.id); //TODO: Error, me deja crear puntos
         this.cancelCreatePointMode();
@@ -165,7 +166,6 @@ export class GraphicComponent implements OnInit, OnDestroy {
 
       }
     });
-
     this.subscriptions.push(s1, s2, s3);
   }
   private selectGraphicById(id: string): Graphic | null {
@@ -176,18 +176,29 @@ export class GraphicComponent implements OnInit, OnDestroy {
     else return null;
   }
 
-  private startViewMode(): void {
-    if (this.sketch) {
-      try {
-        this.sketch.cancel();
-        this.sketch.destroy();
-      } catch (e) {
-        console.error('Error destroying sketch:', e);
+  private applyViewModeState(): void {
+    if (this.isViewMode) {
+      if (this.sketch) {
+        try {
+          this.sketch.cancel();
+        } catch (e) {
+          console.error('Error cancelling sketch:', e);
+        }
       }
+      if (this.bkExpand_Sketch) {
+        this.bkExpand_Sketch.visible = false;
+      }
+    } else {
+      if (this.bkExpand_Sketch) {
+        this.bkExpand_Sketch.visible = true;
+      }
+      this.activateCreatePointMode();
     }
-    if (this.bkExpand_Sketch) {
-      this.bkExpand_Sketch.visible = false;
-    }
+  }
+
+  private toggleViewMode(): void {
+    this.isViewMode = !this.isViewMode;
+    this.applyViewModeState();
   }
 
   ngOnDestroy(): void {
@@ -340,9 +351,9 @@ export class GraphicComponent implements OnInit, OnDestroy {
     const modo = urlParams.get('modo') || 'vista';
 
     if (modo === 'edicion') {
-      this.activateCreatePointMode();
+      this.isViewMode = false;
     } else {
-      this.startViewMode();
+      this.isViewMode = true;
     }
 
     this.bkExpand_Sketch = new Expand({
@@ -352,9 +363,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
     });
 
     this.view.ui.add(this.bkExpand_Sketch, 'top-right');
-    if (modo !== 'edicion') {
-      this.bkExpand_Sketch.visible = false;
-    }
+    this.applyViewModeState();
   }
 
   setupLayerList() {
