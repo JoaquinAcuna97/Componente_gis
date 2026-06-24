@@ -403,9 +403,16 @@ export class GraphicComponent implements OnInit, OnDestroy {
         graphic.symbol = this.originalSymbol;
         const sp = await this.queryToIntersect(this.url_sp, graphic, "SECCION");
         const padron = await this.queryToIntersect(this.url_padrones, graphic, "PADRON");
+        const coddepto = await this.queryToIntersect(this.url_padrones, graphic, "CODDEPTO");
         const depto = await this.queryToIntersect(this.url_deptos, graphic, "NOMBRE");
         const limiteNacional = await this.queryToIntersect(this.url_limiteNacional, graphic, "OBJECTID");
-
+        if (coddepto != null && padron != null) {
+          try {
+            this.handleFindPadron([coddepto + "-" + padron]);
+          } catch (error) {
+            console.log("Error al buscar padron", error);
+          }
+        }
         graphic.attributes = {
           padron: padron[0],
           departamento: depto[0],
