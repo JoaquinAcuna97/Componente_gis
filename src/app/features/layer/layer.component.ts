@@ -53,10 +53,11 @@ export class LayerComponent implements OnInit {
   }
   private loadFeatureLayers(url: string, title: string, visible: boolean) {
     const newLayer = new FeatureLayer({
-                                        url: url,
-                                        title: title,
-                                        visible: visible                           
-                                      });
-    this.layerService.addLayer(newLayer);    
+      url: url,
+      title: title,
+      visible: visible,
+      labelsVisible: !/padron|parcela/i.test(title),
+    });
+    this.layerService.addLayer(newLayer);
   }
 }

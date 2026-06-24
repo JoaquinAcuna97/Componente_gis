@@ -13,6 +13,8 @@ import { MessageService } from '../message.service';
 import Polyline from '@arcgis/core/geometry/Polyline';
 import Polygon from '@arcgis/core/geometry/Polygon';
 import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
+import TextSymbol from '@arcgis/core/symbols/TextSymbol';
+import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { v4 as uuid } from 'uuid';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
@@ -22,6 +24,10 @@ import { APP_CONFIG_TOKEN, AppConfig } from '../../core/config/app.config';
 import { MAP_CONFIG } from '../../core/config/map.config';
 import { LAYER_CONFIGS } from '../../core/config/layer.config';
 import { PADRON_CONFIG } from '../../core/config/padron.config';
+
+interface IHandle {
+  remove(): void;
+}
 
 @Component({
   selector: 'app-graphic',
@@ -37,6 +43,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
   view: MapView;
   graphicLayer: GraphicsLayer;
   padronLayer: GraphicsLayer; // Layer for persistent Padron polygons
+  padronLabelLayer: GraphicsLayer; // Labels rendered above padron polygons
   sketch: Sketch;
   @Input() mapSubject!: BehaviorSubject<Map | null>;
   @Input() viewSubject!: BehaviorSubject<MapView | null>;
@@ -54,6 +61,8 @@ export class GraphicComponent implements OnInit, OnDestroy {
   private optionToSelectMultiplePoints: boolean;
   private graphicInProcess: Graphic | null;
   private onlyCreate = true;
+  private padronBaseLayerLabelsVisible: boolean | undefined;
+  private padronLabelScaleWatch: IHandle | null = null;
 
 
   constructor(
@@ -74,8 +83,9 @@ export class GraphicComponent implements OnInit, OnDestroy {
         width: PADRON_CONFIG.polygonSymbol.outlineWidth
       }
     });
-    // Initialize dedicated layer for Padron polygons
-    this.padronLayer = new GraphicsLayer({ listMode: "hide" });
+    // Initialize dedicated layers for Padron polygons and their labels
+    this.padronLayer = new GraphicsLayer({ listMode: 'hide' });
+    this.padronLabelLayer = new GraphicsLayer({ listMode: 'hide' });
     this.originalSymbol = MAP_CONFIG.defaultPointSymbol;
     this.optionToSelectMultiplePoints = this.appConfig.multiplePointSelection;
   }
@@ -191,6 +201,7 @@ export class GraphicComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.padronLabelScaleWatch?.remove();
     this.subscriptions.forEach(s => s.unsubscribe());
   }
 
@@ -205,28 +216,41 @@ export class GraphicComponent implements OnInit, OnDestroy {
     }
   }
 
-  zoomToAllFeatures() {
-    if (this.view && this.graphicLayer) {
-      this.view.when(() => {
-        this.all_graphics = [...this.graphicLayer.graphics.toArray(), ...this.padronLayer.graphics.toArray()];
-        if (this.all_graphics.length > 0) {
-          if (this.all_graphics.length === 1 && this.all_graphics[0].geometry.type === 'point') {
-            this.view.goTo({
-              target: this.all_graphics[0],
-              scale: 5000
-            }, { duration: 1500 }).catch(err => {
-              console.error("Error zooming to single point: ", err);
-            });
-          } else {
-            this.view.goTo(this.all_graphics, { duration: 1500 }).catch(err => {
-              console.error("Error zooming to all features: ", err);
-            });
-          }
-        } else {
-          console.warn('No hay gráficos en la capa para hacer zoom.');
-        }
-      });
+  zoomToAllFeatures(): Promise<void> {
+    if (!this.view || !this.graphicLayer) {
+      return Promise.resolve();
     }
+
+    return this.view.when().then(() => {
+      this.all_graphics = [
+        ...this.graphicLayer.graphics.toArray(),
+        ...this.padronLayer.graphics.toArray(),
+        ...this.padronLabelLayer.graphics.toArray(),
+      ];
+
+      if (this.padronLabelLayer.graphics.length > 0) {
+        this.padronLabelLayer.visible = false;
+      }
+
+      if (this.all_graphics.length === 0) {
+        console.warn('No hay gráficos en la capa para hacer zoom.');
+        return;
+      }
+
+      const goToPromise = this.all_graphics.length === 1 && this.all_graphics[0].geometry.type === 'point'
+        ? this.view.goTo({
+          target: this.all_graphics[0],
+          scale: 5000,
+        }, { duration: 1500 })
+        : this.view.goTo(this.all_graphics, { duration: 1500 });
+
+      return goToPromise
+        .then(() => this.updatePadronLabelsVisibility())
+        .catch((err) => {
+          console.error('Error zooming to all features: ', err);
+          this.updatePadronLabelsVisibility();
+        });
+    });
   }
 
   setupHoverEffect() {
@@ -275,16 +299,21 @@ export class GraphicComponent implements OnInit, OnDestroy {
   }
   addGraphicsPoligon(featureCollection: any) {
     console.log(featureCollection);
-    const padronGraphicsSet = new Set(this.padronLayer.graphics.toArray());
+    const padronGraphicsSet = new Set([
+      ...this.padronLayer.graphics.toArray(),
+      ...this.padronLabelLayer.graphics.toArray(),
+    ]);
     this.padronLayer.removeAll();
+    this.padronLabelLayer.removeAll();
     this.all_graphics = this.all_graphics.filter(g => !padronGraphicsSet.has(g));
+    this.setPadronBaseLayerLabelsVisible(false);
     if (featureCollection && Array.isArray(featureCollection.features)) {
       featureCollection.features.forEach((f: any) => {
-        const props = f.properties || {};
-        const id = props.id ?? f.attributes?.PADRON ?? f.attributes?.CODDEPTO;
+        const props = { ...(f.properties || {}), ...(f.attributes || {}) };
+        const id = props.id ?? props.PADRON ?? props.CODDEPTO;
         if (f.geometry && f.geometry.type) {
-          // Ensure the feature has an id property for later selection
-          f.properties = { ...(f.properties || {}), id };
+          // Ensure attributes (incl. NOMDEPTO, PADRON) are on properties for labels and selection
+          f.properties = { ...props, id };
           // Choose appropriate symbol based on geometry type
           let symbol: any = this.originalSymbol;
           if (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon') {
@@ -293,26 +322,168 @@ export class GraphicComponent implements OnInit, OnDestroy {
           const graphic = createGraphicFromGeoJSON(f, symbol);
           // Add polygon graphic to dedicated Padron layer
           this.padronLayer.add(graphic);
+          // Add centered label with department name and padron number
+          const labelGraphic = this.createPadronLabelGraphic(
+            graphic.geometry,
+            props.NOMDEPTO ?? props.CODDEPTO,
+            props.PADRON
+          );
+          if (labelGraphic) {
+            this.padronLabelLayer.add(labelGraphic);
+            this.all_graphics.push(labelGraphic);
+          }
           // Track graphic for future operations (zoom, selection, etc.)
           this.all_graphics.push(graphic);
         } else {
           console.warn('Skipping feature due to missing geometry or id', f);
         }
       });
-      // Zoom to fit all newly added graphics (polygons and points)
+      this.padronLabelLayer.visible = false;
+      // Zoom to fit all newly added graphics, then reveal labels when close enough
       this.zoomToAllFeatures();
     }
   }
+  private createPadronLabelGraphic(
+    geometry: Graphic['geometry'],
+    departamento: string | number | undefined,
+    padron: string | number | undefined
+  ): Graphic | null {
+    if (!geometry || geometry.type !== 'polygon' || departamento == null || padron == null) {
+      return null;
+    }
+
+    const labelPoint = this.getPolygonLabelPoint(geometry as Polygon);
+    if (!labelPoint) {
+      return null;
+    }
+
+    const labelText = `${departamento}\n${padron}`;
+
+    return new Graphic({
+      geometry: labelPoint,
+      symbol: new TextSymbol({
+        text: labelText,
+        color: PADRON_CONFIG.label.color,
+        haloColor: PADRON_CONFIG.label.haloColor,
+        haloSize: PADRON_CONFIG.label.haloSize,
+        font: {
+          size: PADRON_CONFIG.label.fontSize,
+          weight: PADRON_CONFIG.label.fontWeight,
+        },
+        horizontalAlignment: 'center',
+        verticalAlignment: 'middle',
+      }),
+    });
+  }
+
+  /** Returns a point guaranteed to fall inside the polygon for label placement. */
+  private getPolygonLabelPoint(polygon: Polygon): Point | null {
+    const extent = polygon.extent;
+    const centroid = polygon.centroid;
+    const candidates: Point[] = [];
+
+    if (centroid) {
+      candidates.push(centroid);
+    }
+    if (extent?.center) {
+      candidates.push(extent.center);
+    }
+
+    for (const candidate of candidates) {
+      if (geometryEngine.contains(polygon, candidate)) {
+        return candidate;
+      }
+    }
+
+    if (!extent) {
+      return centroid ?? null;
+    }
+
+    // Sample the extent grid until an interior point is found
+    const gridSteps = 7;
+    for (let row = 1; row < gridSteps; row++) {
+      for (let col = 1; col < gridSteps; col++) {
+        const candidate = new Point({
+          x: extent.xmin + ((extent.xmax - extent.xmin) * col) / gridSteps,
+          y: extent.ymin + ((extent.ymax - extent.ymin) * row) / gridSteps,
+          spatialReference: polygon.spatialReference,
+        });
+        if (geometryEngine.contains(polygon, candidate)) {
+          return candidate;
+        }
+      }
+    }
+
+    return centroid ?? extent.center ?? null;
+  }
+
+  private getPadronFeatureLayer(): FeatureLayer | undefined {
+    if (!this.map) {
+      return undefined;
+    }
+
+    for (const layer of this.map.layers) {
+      if (layer.type !== 'feature') {
+        continue;
+      }
+
+      const featureLayer = layer as FeatureLayer;
+      if (
+        featureLayer.url === this.url_padrones
+        || /padron|parcela/i.test(featureLayer.title ?? '')
+      ) {
+        return featureLayer;
+      }
+    }
+
+    return undefined;
+  }
+
+  private setPadronBaseLayerLabelsVisible(visible: boolean): void {
+    const padronFeatureLayer = this.getPadronFeatureLayer();
+    if (!padronFeatureLayer) {
+      return;
+    }
+
+    if (this.padronBaseLayerLabelsVisible === undefined) {
+      this.padronBaseLayerLabelsVisible = padronFeatureLayer.labelsVisible;
+    }
+
+    padronFeatureLayer.labelsVisible = visible;
+  }
+
+  private setupPadronLabelVisibility(): void {
+    if (!this.view || this.padronLabelScaleWatch) {
+      return;
+    }
+
+    this.padronLabelScaleWatch = this.view.watch('scale', () => {
+      this.updatePadronLabelsVisibility();
+    });
+  }
+
+  private updatePadronLabelsVisibility(): void {
+    if (!this.view || this.padronLabelLayer.graphics.length === 0) {
+      return;
+    }
+
+    this.padronLabelLayer.visible = this.view.scale <= PADRON_CONFIG.label.maxVisibleScale;
+  }
+
   setupGraphicsLayer() {
     this.graphicLayer = this.layerService.getGraphicLayer();
     // Ensure base graphics layer is added only once
     if (!this.map.layers.find(l => l === this.graphicLayer)) {
       this.map.add(this.graphicLayer);
     }
-    // Add Padron layer if not already present
+    // Add Padron layers if not already present (labels above polygons)
     if (!this.map.layers.find(l => l === this.padronLayer)) {
       this.map.add(this.padronLayer);
     }
+    if (!this.map.layers.find(l => l === this.padronLabelLayer)) {
+      this.map.add(this.padronLabelLayer);
+    }
+    this.setupPadronLabelVisibility();
   }
 
   setupSketch() {
