@@ -164,6 +164,14 @@
   <script>
     document.getElementById('padronInput').value = 'K-3336, K-748, K-3819, K-3816';
   </script>
+  <script>
+    // Escuchar respuestas del componente
+    window.addEventListener('message', (event) => {
+      if (event.data.message === 'PADRON_NOT_FOUND') {
+        console.log('Se escucha el mensaje:', event.data.params.results);
+      }
+    });
+  </script>
 </body>
 
 </html>
