@@ -19,7 +19,7 @@ export interface LayerConfig {
  * Centralised list of all map layers.
  * Directly pulled from `environment.urls_layers` – no hard‑coded strings in components.
  */
-export const LAYER_CONFIGS: ReadonlyArray<LayerConfig> = Object.freeze(
+export const LAYER_CONFIGS: readonly LayerConfig[] = Object.freeze(
     environment.urls_layers.map(l => ({
         description: l.description,
         url: l.url,

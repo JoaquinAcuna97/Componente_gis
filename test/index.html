@@ -9,15 +9,17 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <style>
     #frame {
-      height: 800px;
-      width: 800px
+      height: 75vh;
+      width: 100%;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
     }
   </style>
 
 </head>
 
 <body>
-  <iframe id="frame" src="http://localhost:4200" style="height: 800px; width: 800px;"></iframe>
+  <iframe id="frame" src="http://localhost:4200"></iframe>
   <script>
     function sendPoints() {
       var receiver = document.getElementById('frame').contentWindow;
@@ -59,7 +61,58 @@
         }
       }, "*")
     };
+    function findPadron() {
+      var input = document.getElementById('padronInput').value;
+      if (!input) { return; }
+      var params = input.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      var receiver = document.getElementById('frame').contentWindow;
+      receiver.postMessage({ message: 'FIND_PADRON', params: params }, '*');
+    }
+    addEventListener('message', (e) => {
+      console.log('Message received from child:', e);
+      if (e.data && e.data.message === 'PADRON_FOUND') {
+        console.log('PADRON_FOUND data:', e.data);
+      }
+      if (e.data && e.data.message === 'PADRON_NOT_FOUND') {
+        console.log('PADRON_NOT_FOUND data:', e.data);
+      }
+    });
 
+    // Send initial demo features
+    var receiver = document.getElementById('frame').contentWindow;
+    receiver.postMessage({
+      message: "ADD_FEATURES", params: {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [-56.164532, -34.901112]
+            },
+            "properties": { "id": "5125" }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [-54.945187, -34.958084]
+            },
+            "properties": { "id": "1" }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [-57.1384004269828, -30.325450936322873]
+            },
+            "properties": { "id": "968534354" }
+          }
+        ]
+      }
+    }, "*");
+  </script>
+  <script>
     function Zoom() {
       var receiver = document.getElementById('frame').contentWindow;
       receiver.postMessage({
@@ -94,17 +147,22 @@
       }, "*");
     }
   </script>
-  </br>
   <button onclick="sendPoints()">ENVIAR PUNTOS </button>
   <button onclick="Zoom()">Zoom punto </button>
   <button onclick="deletePoints()">Borrar puntos </button>
   <button onclick="finishPoint()">Terminar Punto </button>
   <button onclick="startViewMode()">Modo Vista </button>
+  <br>
   <input id="id_to_find">
   <button onclick="findGraphicAndSelect()">Encontrar Punto </button>
-
+  <br>
+  <!-- Search Padron UI -->
+  <div style="margin-top:10px;">
+    <input id="padronInput" type="text" placeholder="Ej: L-2514, L-34, M-1212" style="width:300px;" />
+    <button onclick="findPadron()">Buscar Padrones</button>
+  </div>
   <script>
-    addEventListener('message', (e) => console.log("llego", e));
+    document.getElementById('padronInput').value = 'K-3336, K-748, K-3819, K-3816';
   </script>
 </body>
 

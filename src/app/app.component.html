@@ -2,9 +2,15 @@
     <app-graphic [map]="map" [view]="view"></app-graphic>
 </div> -->
 
-<div id="mapViewNode" #mapViewNode style="height: 97vh; width: 100%;">
-  <app-graphic *ngIf="mapSubject && viewSubject" [mapSubject]="mapSubject" [viewSubject]="viewSubject"></app-graphic>
-  <app-layer *ngIf="cargoMapa" ></app-layer>
+<div id="mapViewNode" #mapViewNode style="height: 100%; width: 100%;">
+  @if (mapSubject && viewSubject) {
+  <app-graphic [mapSubject]="mapSubject" [viewSubject]="viewSubject">
+  </app-graphic>
+  }
+
+  @if (cargoMapa) {
+  <app-layer></app-layer>
+  }
 </div>
 <!-- <div id="mapViewNode" #mapViewNode style="height: 100vh; width: 100%;">
   <app-graphic *ngIf="map && view" [map]="map" [view]="view"></app-graphic>

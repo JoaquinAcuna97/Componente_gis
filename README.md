@@ -93,6 +93,8 @@ El proyecto utiliza archivos de configuración en `src/environments/`:
 
 #### Configuraciones principales en `environment.ts`
 
+#### Configuraciones principales en `environment.ts`
+
 ```typescript
 export const environment = {
   // ID del mapa base de ArcGIS
@@ -247,14 +249,15 @@ El componente implementa un sistema de comunicación bidireccional con la aplica
 
 ### Mensajes que Recibe del Padre
 
-| Mensaje           | Parámetros                                | Descripción                                    |
-| ----------------- | ----------------------------------------- | ---------------------------------------------- |
-| `ADD_FEATURES`    | `{ features: GeoJSON_FeatureCollection }` | Añade múltiples features al mapa               |
-| `ZOOM_TO_FEATURE` | `{ id: string }`                          | Hace zoom a un feature específico por ID       |
-| `DELETE_FEATURES` | `{ ids: string[] }`                       | Elimina features del mapa por sus IDs          |
-| `FINISHED_POINT`  | `{}`                                      | Finaliza la creación de un punto en progreso   |
-| `ONLY_VIEW`       | `{}`                                      | Cambia a modo solo visualización (sin edición) |
-| `UPDATE_FEATURE`  | `{ id: string }`                          | Pone un feature en modo edición por ID         |
+| Mensaje           | Parámetros                                | Descripción                                          |
+| ----------------- | ----------------------------------------- | ---------------------------------------------------- |
+| `ADD_FEATURES`    | `{ features: GeoJSON_FeatureCollection }` | Añade múltiples features al mapa                     |
+| `ZOOM_TO_FEATURE` | `{ id: string }`                          | Hace zoom a un feature específico por ID             |
+| `DELETE_FEATURES` | `{ ids: string[] }`                       | Elimina features del mapa por sus IDs                |
+| `FINISHED_POINT`  | `{}`                                      | Finaliza la creación de un punto en progreso         |
+| `ONLY_VIEW`       | `{}`                                      | Cambia a modo solo visualización (sin edición)       |
+| `UPDATE_FEATURE`  | `{ id: string }`                          | Pone un feature en modo edición por ID               |
+| `FIND_PADRON`     | `{["L-2514","L-34","M-1212"]}`            | Busca uno o mas padrones y los agrega al mapa por ID |
 
 ### Mensajes que Envía al Padre
 
@@ -266,6 +269,8 @@ El componente implementa un sistema de comunicación bidireccional con la aplica
 | `DELETE_FEATURE`      | `{ ids: string[] }`                                         | Notifica que se eliminaron features                 |
 | `FEATURE_SELECTED`    | `{ id: string }`                                            | Notifica que se seleccionó un feature               |
 | `FEATURES_SELECTED`   | `{ id: string[] }`                                          | Notifica que se seleccionaron múltiples features    |
+| `PADRON_FOUND`        | `{ results: GeoJSON_Feature[] }`                            | Notifica los padrones encontrados con geometría     |
+| `PADRON_NOT_FOUND`    | `{ results: string[] }`                                     | Notifica los padrones que no tienen geometría       |
 
 ### Ejemplo de Uso
 
@@ -318,6 +323,7 @@ El proyecto consume varios servicios web del MGAP:
 
 - **Rutas Nacionales**: WMS de MTOP
 - **Capas vectoriales**: ArcGIS REST Services
+- **Portal de mapas**: <https://mapastest.mgap.gub.uy/portal>
 - **Portal de mapas**: <https://mapastest.mgap.gub.uy/portal>
 
 ## 🔐 Configuración de Seguridad
