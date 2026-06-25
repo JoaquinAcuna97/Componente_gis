@@ -1,4 +1,4 @@
-# Componente GIS v3
+# Componente GIS v3.1
 
 Un componente de Sistema de Información Geográfica (GIS) desarrollado en Angular que integra mapas interactivos usando ArcGIS API for JavaScript. Este proyecto está diseñado para visualizar y manipular datos geoespaciales del MGAP (Ministerio de Ganadería, Agricultura y Pesca) de Uruguay.
 
@@ -385,5 +385,5 @@ Para soporte técnico o consultas, contacta al equipo de desarrollo del MGAP.
 
 ---
 
-**Versión**: 0.0.0  
-**Última actualización**: Octubre 2025
+**Versión**: 3.1  
+**Última actualización**: Junio 2026
