@@ -21,6 +21,6 @@ export const PADRON_CONFIG = Object.freeze({
     haloColor: [255, 255, 255, 1],
     haloSize: 1,
     /** Labels are shown when the map scale is at or below this value (more zoomed in). */
-    maxVisibleScale: 75000,
+    maxVisibleScale: 150000,
   },
 });
