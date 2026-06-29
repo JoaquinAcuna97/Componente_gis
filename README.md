@@ -276,6 +276,7 @@ El componente implementa un sistema de comunicación bidireccional con la aplica
 
 ```javascript
 // Enviar puntos al componente
+
 const iframe = document.getElementById('gis-component');
 iframe.contentWindow.postMessage(
   {
@@ -298,6 +299,8 @@ iframe.contentWindow.postMessage(
   },
   '*'
 );
+
+window.parent.postMessage({ message: 'FIND_PADRON', params: ['L-2514'] }, '*');
 
 // Escuchar respuestas del componente
 window.addEventListener('message', (event) => {
